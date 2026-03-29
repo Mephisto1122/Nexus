@@ -1,0 +1,80 @@
+# Nexus Gate -- Dashboard Server
+#
+# Default deploys with auto-generated TLS (password required, min 12 chars):
+#   NEXUS_ADMIN_PASSWORD=MySecurePass123 docker compose up -d
+#
+# Behind a reverse proxy (nginx, traefik, etc.):
+#   NEXUS_ADMIN_PASSWORD=MySecurePass123 docker compose --profile reverse-proxy up -d
+#
+# View logs:
+#   docker compose logs nexus-dashboard
+
+services:
+  # Default: TLS enabled, auto-generates self-signed cert
+  nexus-dashboard:
+    build: .
+    image: nexus-gate-dashboard:latest
+    container_name: nexus-dashboard
+    restart: unless-stopped
+    ports:
+      - "${NEXUS_PORT:-7070}:7070"
+    volumes:
+      - nexus-data:/data
+    environment:
+      - NEXUS_DATA_DIR=/data
+      - NEXUS_ADMIN_PASSWORD=${NEXUS_ADMIN_PASSWORD:?Set NEXUS_ADMIN_PASSWORD (min 12 chars)}
+    # Default CMD in Dockerfile: --tls --bind 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-sfk", "https://localhost:7070/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 64M
+
+  # Behind a reverse proxy: plaintext inside the container, TLS at the proxy
+  nexus-dashboard-proxy:
+    build: .
+    image: nexus-gate-dashboard:latest
+    container_name: nexus-dashboard-proxy
+    profiles: ["reverse-proxy"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${NEXUS_PORT:-7070}:7070"
+    volumes:
+      - nexus-data:/data
+    environment:
+      - NEXUS_DATA_DIR=/data
+      - NEXUS_ADMIN_PASSWORD=${NEXUS_ADMIN_PASSWORD:?Set NEXUS_ADMIN_PASSWORD (min 12 chars)}
+    command: ["--no-browser", "--bind", "0.0.0.0", "--allow-plaintext"]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7070/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+volumes:
+  nexus-data:
+    driver: local

@@ -5,6 +5,14 @@ Nexus Gate — Structural Classifier
 Classifies commands by shell syntax, known tool behavior, and binary provenance.
 195 known tools, 69 subcommand overrides, 50 flag overrides.
 
+
+# Fix encoding for Windows terminals
+try:
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+except (AttributeError, OSError):
+    pass
+
 Called by nexus_hook.py. No external dependencies.
 """
 
@@ -1713,7 +1721,7 @@ if __name__ == "__main__":
         ("grep x file 2>/tmp/e",            "low",     "allow"),  # still a read/filter
     ]
 
-    print("\n  Nexus Structural Classifier — Test Suite")
+    print("\n  Nexus Structural Classifier -- Test Suite")
     print("  " + "=" * 60)
     
     passed = 0
@@ -1785,7 +1793,7 @@ if __name__ == "__main__":
          "dry-run should NOT apply to unknown binary"),
         ("echo hello > out.txt", None, "structure:redirect_out",
          "redirect out SHOULD be observed"),
-        # Round 2 parser bugs
+        # Parser edge cases
         ("2>err.txt ls -la", None, "known_infra:ls",
          "leading redirect should NOT hide the command"),
         ("2>err.txt ls -la", "opaque:", None,
@@ -1798,7 +1806,7 @@ if __name__ == "__main__":
          "--data=@file SHOULD detect --data flag"),
         ("echo hi >> out.txt", None, "structure:redirect_append",
          "append redirect SHOULD be observed with target"),
-        # Round 3: FD duplication and stderr
+        # FD duplication and stderr
         ("2>&1 ls", "structure:redirect_out", None,
          "FD duplication should NOT be treated as file redirect"),
         ("1>&2 ls", "structure:redirect_out", None,
@@ -1809,7 +1817,7 @@ if __name__ == "__main__":
          "stderr redirect should NOT be treated as stdout redirect"),
         ("grep x file 2>/tmp/e", None, "structure:stderr_redirect",
          "stderr redirect SHOULD be observed as side-effect"),
-        # Round 4: dry-run allowlist
+        # Dry-run allowlist
         ("rm --dry-run file", "override:dry_run", None,
          "rm does NOT support --dry-run — should NOT get override"),
         ("rm --noop file", "override:dry_run", None,

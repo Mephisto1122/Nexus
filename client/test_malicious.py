@@ -5,6 +5,14 @@ Nexus Gate — Attack Pattern Tests
 72 attack patterns across Unix, PowerShell, and cmd.exe.
 Run after install or table edits to verify coverage.
 
+
+# Fix encoding for Windows terminals
+try:
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+except (AttributeError, OSError):
+    pass
+
   python3 test_malicious.py
 """
 
@@ -291,7 +299,7 @@ def main():
     BOLD = "\033[1m"
     RESET = "\033[0m"
 
-    print(f"\n  {BOLD}Nexus Gate — Malicious Activity Test{RESET}")
+    print(f"\n  {BOLD}Nexus Gate -- Malicious Activity Test{RESET}")
     print(f"  {'=' * 65}")
     print(f"  {len(MALICIOUS_TESTS)} attack patterns\n")
 
@@ -331,9 +339,9 @@ def main():
         # Print
         if ok:
             tier_color = RED if tier == "block" else YELLOW
-            print(f"  ✅ {tier_color}{tier:5s}{RESET} {DIM}{cmd[:65]}{RESET}")
+            print(f"  * {tier_color}{tier:5s}{RESET} {DIM}{cmd[:65]}{RESET}")
         else:
-            print(f"\n  ❌ {RED}SECURITY GAP{RESET}")
+            print(f"\n  X {RED}SECURITY GAP{RESET}")
             print(f"     Command:  {BOLD}{cmd}{RESET}")
             print(f"     Got:      {tier} [{v.risk}]")
             print(f"     Expected: {min_tier} or higher")
@@ -352,7 +360,7 @@ def main():
     if failed == 0:
         print(f"\n  {GREEN}{BOLD}ALL ATTACKS CAUGHT.{RESET}")
     else:
-        print(f"\n  {RED}{BOLD}{failed} SECURITY GAP(S) — FIX BEFORE SHIPPING.{RESET}")
+        print(f"\n  {RED}{BOLD}{failed} SECURITY GAP(S) -- FIX BEFORE SHIPPING.{RESET}")
 
     print()
     return failed == 0

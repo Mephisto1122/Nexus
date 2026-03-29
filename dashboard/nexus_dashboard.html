@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c; --card: rgba(255,255,255,.05); --card-hover: rgba(255,255,255,.08); --card-alt: rgba(255,255,255,.03);
+  --border: rgba(255,255,255,.12); --border-soft: rgba(255,255,255,.06); --border-focus: rgba(147,112,219,.6);
+  --text: #f0f0f0; --text-2: rgba(255,255,255,.8); --text-3: rgba(255,255,255,.5); --text-4: rgba(255,255,255,.35); --text-5: rgba(255,255,255,.2);
+  --accent: #9370DB; --accent-hover: #a882e8; --accent-bg: rgba(147,112,219,.12);
+  --green: #34d399; --green-bg: rgba(52,211,153,.1); --green-text: #34d399;
+  --orange: #FBBF24; --orange-bg: rgba(251,191,36,.1); --orange-text: #FBBF24;
+  --red: #F87171; --red-bg: rgba(248,113,113,.1); --red-text: #F87171;
+  --font: 'Outfit', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --mono: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace;
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  line-height: 1.47059; font-size: 14px; letter-spacing: -.016em;
+}
+/* ── Background ── */
+.aura{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 15% 25%,rgba(147,112,219,.1),transparent),
+             radial-gradient(ellipse 60% 70% at 85% 75%,rgba(52,211,153,.07),transparent)}
+button { font: inherit; cursor: pointer; border: none; background: none; letter-spacing: inherit; color: inherit; }
+input { font: inherit; letter-spacing: inherit; }
+
+/* ── Setup flow ── */
+.setup-shell {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 40px 24px;
+  position: relative; z-index: 1;
+}
+.setup-frame {
+  width: 100%; max-width: 580px; position: relative; overflow: hidden;
+}
+.setup-card {
+  background: rgba(255,255,255,.04); border-radius: 22px;
+  box-shadow: 0 0 0 .5px rgba(255,255,255,.08), 0 8px 40px rgba(0,0,0,.3);
+  padding: 48px 44px; text-align: center;
+  animation: cardIn .5s var(--ease) both;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  position: relative; z-index: 1;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.setup-title {
+  font-size: 32px; font-weight: 700; letter-spacing: -.024em;
+  line-height: 1.1; margin-bottom: 10px;
+}
+.setup-sub {
+  font-size: 15px; color: var(--text-3); line-height: 1.6;
+  max-width: 380px; margin: 0 auto 32px; letter-spacing: -.01em;
+}
+.setup-mini { font-size: 12px; color: var(--text-4); line-height: 1.6; margin-top: 20px; }
+.dots { display: flex; gap: 8px; justify-content: center; margin-top: 28px; }
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-5); transition: all .35s var(--ease);
+}
+.dot.on { background: var(--text); width: 24px; border-radius: 4px; }
+
+/* Feature cards */
+.features { display: flex; flex-direction: column; gap: 12px; text-align: left; margin-bottom: 28px; }
+.feature {
+  display: flex; gap: 16px; align-items: flex-start; padding: 18px 20px;
+  border-radius: 14px; background: var(--card-alt); border: .5px solid var(--border-soft);
+}
+.feature-num {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--text);
+  color: #fff; display: grid; place-items: center; font-size: 13px;
+  font-weight: 600; flex-shrink: 0;
+}
+.feature-text { flex: 1; }
+.feature-text strong { display: block; font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.feature-text span { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+
+/* Inputs */
+.field { width: 100%; text-align: left; margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
+.field input {
+  width: 100%; padding: 12px 16px; border-radius: 12px; font-size: 15px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  outline: none; transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+.field input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(147,112,219,.2); }
+.field input::placeholder { color: var(--text-5); }
+.field-error { font-size: 12px; color: var(--red); margin-top: 5px; }
+
+/* Buttons */
+.btn-fill {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 28px; border-radius: 980px; font-size: 15px; font-weight: 500;
+  background: var(--accent); color: #fff; transition: all .2s var(--ease);
+  min-width: 180px;
+}
+.btn-fill:hover { background: var(--accent-hover); transform: scale(1.01); }
+.btn-fill:active { transform: scale(.98); }
+.btn-fill.full { width: 100%; }
+.btn-text { font-size: 14px; font-weight: 500; color: var(--accent); padding: 8px 16px; border-radius: 8px; }
+.btn-text:hover { background: var(--accent-bg); }
+.btn-outline {
+  padding: 10px 20px; border-radius: 980px; font-size: 14px; font-weight: 500;
+  border: 1px solid var(--border); color: var(--text-2); transition: all .2s var(--ease);
+}
+.btn-outline:hover { border-color: var(--text-4); color: var(--text); }
+.btn-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* Key display */
+.key-box {
+  padding: 20px; border-radius: 14px; background: var(--card-alt);
+  border: .5px solid var(--border-soft); text-align: left; margin-bottom: 16px;
+}
+.key-label { font-size: 12px; font-weight: 600; color: var(--text-4); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.key-value {
+  font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text);
+  word-break: break-all; line-height: 1.5; user-select: all;
+}
+.key-row { display: flex; gap: 10px; align-items: center; }
+.key-row .key-value { flex: 1; }
+.cmd-block {
+  padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.12); color: #f0f0f0; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  text-align: left; overflow-x: auto; white-space: nowrap; margin-bottom: 16px;
+}
+.copy-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  background: var(--card-alt); border: .5px solid var(--border-soft);
+  color: var(--text-3); transition: all .15s var(--ease); white-space: nowrap;
+}
+.copy-btn:hover { background: var(--border-soft); color: var(--text-2); }
+.copy-btn.done { background: var(--green-bg); color: var(--green-text); border-color: transparent; }
+
+/* Status indicators */
+.status-list { text-align: left; margin-bottom: 28px; }
+.status-item {
+  display: flex; align-items: center; gap: 14px; padding: 14px 0;
+  border-bottom: .5px solid var(--border-soft);
+}
+.status-item:last-child { border-bottom: none; }
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  transition: background .5s var(--ease);
+}
+.status-dot.ok { background: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,.2); }
+.status-dot.wait { background: var(--text-5); }
+.status-name { font-size: 14px; font-weight: 500; flex: 1; }
+.status-info { font-size: 13px; color: var(--text-4); }
+
+/* Rule chips */
+.rule-section { text-align: left; margin-bottom: 20px; }
+.rule-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.rule-section p { font-size: 12px; color: var(--text-4); line-height: 1.5; margin-bottom: 10px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 8px; background: rgba(255,255,255,.06);
+  border: .5px solid var(--border); font-size: 12px; color: var(--text-3);
+  font-family: var(--mono); animation: chipIn .25s var(--ease) both;
+}
+@keyframes chipIn { from { opacity: 0; transform: scale(.9); } }
+.chip-x { font-size: 14px; color: var(--text-5); cursor: pointer; line-height: 1; }
+.chip-x:hover { color: var(--red); }
+.rule-add { display: flex; gap: 6px; }
+.rule-input {
+  flex: 1; padding: 8px 12px; border-radius: 10px; font-size: 13px;
+  border: 1px solid var(--border); background: var(--card); color: var(--text); outline: none;
+}
+.rule-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 2px rgba(147,112,219,.15); }
+
+/* ── Dashboard ── */
+.app { display: grid; grid-template-columns: 220px 1fr; height: 100vh; position: relative; z-index: 1; }
+.side {
+  background: rgba(255,255,255,.03); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-right: .5px solid var(--border); padding: 20px 12px; display: flex; flex-direction: column;
+  position: relative; z-index: 1;
+}
+.side-title { font-size: 22px; font-weight: 700; letter-spacing: -.02em; padding: 12px 12px 20px; }
+.side-label { font-size: 11px; font-weight: 600; color: var(--text-5); text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px 6px; }
+.nav { display: flex; flex-direction: column; gap: 1px; }
+.nav button {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px;
+  border-radius: 10px; font-size: 13px; font-weight: 500; color: var(--text-3);
+  transition: all .15s var(--ease);
+}
+.nav button:hover { background: rgba(255,255,255,.06); color: var(--text); }
+.nav button.on { background: rgba(147,112,219,.12); color: var(--accent); font-weight: 600; }
+.nav-count {
+  margin-left: auto; font-size: 11px; font-weight: 600; color: var(--text-5);
+  min-width: 20px; text-align: right;
+}
+.side-stat {
+  margin-top: auto; padding: 16px; border-radius: 14px;
+  background: var(--card-alt); border: .5px solid var(--border-soft);
+}
+.side-stat .live { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-3); }
+.side-stat .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(52,199,89,.15); } }
+.side-stat .big { font-size: 32px; font-weight: 700; letter-spacing: -.03em; margin-top: 8px; }
+.side-stat .dim { font-size: 11px; color: var(--text-4); margin-top: 2px; }
+.logout-btn { margin-top: 10px; width: 100%; padding: 8px; border-radius: 8px; font-size: 12px; color: var(--text-4); border: .5px solid var(--border-soft); }
+.logout-btn:hover { color: var(--text-2); border-color: var(--border); }
+
+.main { overflow-y: auto; }
+.content { padding: 28px 32px; max-width: 1100px; }
+.page-head { margin-bottom: 24px; }
+.page-head h1 { font-size: 28px; font-weight: 700; letter-spacing: -.025em; }
+.page-head p { font-size: 14px; color: var(--text-3); margin-top: 4px; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 24px; }
+.stat {
+  padding: 18px; border-radius: 16px; background: var(--card);
+  box-shadow: 0 0 0 .5px rgba(255,255,255,.06);
+  transition: transform .15s var(--ease); cursor: pointer;
+}
+.stat:hover { transform: translateY(-2px); box-shadow: 0 0 0 .5px rgba(255,255,255,.1), 0 4px 16px rgba(0,0,0,.2); }
+.stat-label { font-size: 11px; font-weight: 600; color: var(--text-4); text-transform: uppercase; letter-spacing: .03em; }
+.stat-val { font-size: 28px; font-weight: 700; letter-spacing: -.03em; margin-top: 6px; transition: color .3s; }
+.stat-val[data-pop] { animation: pop .3s var(--ease); }
+@keyframes pop { 0% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+/* Panels */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.panel {
+  background: var(--card); border-radius: 16px;
+  box-shadow: 0 0 0 .5px rgba(255,255,255,.06);
+  overflow: hidden;
+}
+.panel-head {
+  padding: 16px 20px; border-bottom: .5px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-head h2 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.panel-empty { padding: 40px 20px; text-align: center; color: var(--text-4); font-size: 13px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 600; color: var(--text-4); text-transform: uppercase; letter-spacing: .03em; background: var(--card-alt); }
+td { padding: 11px 16px; border-bottom: .5px solid var(--border-soft); font-size: 13px; }
+tr:last-child td { border-bottom: none; }
+tr { transition: background .1s; cursor: pointer; }
+tr:hover td { background: rgba(147,112,219,.04); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.truncate { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dim { color: var(--text-4); }
+
+/* Tier badges */
+.tier { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.tier-allow { color: var(--green-text); background: var(--green-bg); }
+.tier-warn { color: var(--orange-text); background: var(--orange-bg); }
+.tier-block { color: var(--red-text); background: var(--red-bg); }
+
+/* Agents */
+.agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; padding: 16px; }
+.agent-card {
+  padding: 18px; border-radius: 14px; border: .5px solid var(--border);
+  background: rgba(255,255,255,.04); width: 100%; text-align: left;
+  transition: all .15s var(--ease); cursor: pointer;
+}
+.agent-card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); transform: translateY(-1px); }
+.agent-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.agent-name { font-size: 14px; font-weight: 600; flex: 1; }
+.agent-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.agent-chips .chip { padding: 3px 8px; font-family: var(--font); font-size: 11px; color: var(--text-3); }
+.agent-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.agent-num { padding: 10px; border-radius: 10px; background: rgba(255,255,255,.06); }
+.agent-num .n { font-size: 20px; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
+.agent-num .l { font-size: 10px; font-weight: 600; color: var(--text-4); text-transform: uppercase; letter-spacing: .03em; margin-top: 2px; }
+
+/* Detail */
+.detail-grid { display: grid; grid-template-columns: 1fr 360px; gap: 12px; }
+.detail-grid.solo { grid-template-columns: 1fr; }
+.detail {
+  background: var(--card); border-radius: 16px; position: sticky; top: 28px;
+  box-shadow: 0 0 0 .5px rgba(255,255,255,.06);
+  animation: slideIn .2s var(--ease); overflow: hidden;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(8px); } }
+.detail-head { padding: 14px 16px; border-bottom: .5px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; }
+.detail-body { padding: 16px; }
+.detail-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; }
+.detail-row .k { color: var(--text-4); }
+.detail-row .v { font-weight: 600; text-align: right; }
+.detail-label { font-size: 11px; font-weight: 600; color: var(--text-5); text-transform: uppercase; letter-spacing: .03em; margin: 14px 0 4px; }
+.code-box {
+  padding: 12px 14px; border-radius: 10px; background: var(--card-alt);
+  font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  color: var(--text-3); word-break: break-all; white-space: pre-wrap;
+}
+.close-x { width: 28px; height: 28px; border-radius: 8px; font-size: 14px; color: var(--text-4); display: grid; place-items: center; }
+.close-x:hover { background: var(--card-alt); color: var(--text-2); }
+
+/* Filters */
+.filters { display: flex; gap: 4px; margin-bottom: 16px; }
+.filter-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  border: .5px solid transparent; color: var(--text-3); transition: all .15s var(--ease);
+}
+.filter-btn:hover { background: rgba(255,255,255,.08); }
+.filter-btn.on { background: var(--accent); color: #fff; }
+
+/* Eye toggle */
+.pw-wrap { position: relative; }
+.pw-wrap input { width: 100%; padding-right: 44px; }
+.pw-eye {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center;
+  color: var(--text-5); font-size: 14px; cursor: pointer; border: none; background: none;
+}
+.pw-eye:hover { color: var(--text-3); background: var(--card-alt); }
+
+/* Stats breakdown */
+.stat-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 12px; gap: 2px; }
+.stat-bar div { border-radius: 3px; transition: flex .4s var(--ease); min-width: 2px; }
+.stat-breakdown { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+.stat-breakdown div { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); }
+.stat-breakdown span { width: 8px; height: 8px; border-radius: 2px; }
+
+/* Export */
+.export-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border-soft); color: var(--text-3); cursor: pointer;
+  transition: all .15s var(--ease); background: var(--card);
+}
+.export-btn:hover { border-color: var(--border); color: var(--text-2); }
+
+/* Explanation box */
+.explain-box {
+  margin-top: 12px; padding: 14px 16px; border-radius: 12px;
+  background: var(--red-bg); border: .5px solid rgba(248,113,113,.2);
+  font-size: 12px; line-height: 1.7; color: var(--text-2);
+}
+.explain-box strong { color: var(--red-text); font-weight: 600; }
+.explain-box.warn-box { background: var(--orange-bg); border-color: rgba(251,191,36,.2); }
+.explain-box.warn-box strong { color: var(--orange-text); }
+
+/* Top blocked list */
+.top-list { padding: 0; }
+.top-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: .5px solid var(--border-soft); font-size: 12px; cursor: pointer; transition: background .15s; }
+.top-item:hover { background: var(--card-alt); }
+.top-item:last-child { border-bottom: none; }
+.top-rank { width: 20px; text-align: center; font-weight: 700; color: var(--text-4); font-size: 11px; }
+.top-cmd { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top-count { font-weight: 700; color: var(--red); min-width: 30px; text-align: right; }
+
+/* Rules */
+.rules-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 20px; }
+.back-link { font-size: 14px; color: var(--accent); margin-bottom: 16px; display: block; }
+.back-link:hover { text-decoration: underline; }
+.allow-btn {
+  padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  background: var(--green-bg); color: var(--green-text); border: none;
+  cursor: pointer; transition: all .15s var(--ease); white-space: nowrap;
+}
+.allow-btn:hover { background: var(--green); color: #fff; }
+.allow-btn:disabled { opacity: .5; cursor: default; background: var(--green-bg); color: var(--green-text); }
+
+/* Toast */
+.toast-wrap { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast {
+  padding: 10px 20px; border-radius: 980px; background: rgba(255,255,255,.15); color: #fff; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1);
+  font-size: 13px; font-weight: 500; box-shadow: 0 8px 30px rgba(0,0,0,.2);
+  animation: toastIn .3s var(--ease);
+}
+.toast.out { animation: toastOut .25s var(--ease) forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(12px) scale(.95); } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-8px) scale(.95); } }
+
+/* Settings */
+.settings-card {
+  background: var(--card); border-radius: 16px; padding: 24px;
+  box-shadow: 0 0 0 .5px rgba(255,255,255,.06);
+  margin-bottom: 12px;
+}
+.settings-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.settings-card .desc { font-size: 13px; color: var(--text-3); line-height: 1.6; margin-bottom: 14px; }
+
+@media (max-width: 920px) {
+  .app { grid-template-columns: 1fr; }
+  .side { display: none; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .grid-2, .detail-grid, .rules-cols { grid-template-columns: 1fr; }
+}
+/* ── Alert banner ── */
+.alert-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 20px; border-radius: 14px; margin-bottom: 12px;
+  background: var(--accent-bg); border: 1px solid var(--border-focus);
+  animation: cardIn .4s var(--ease) both;
+}
+.alert-banner.crit { background: var(--red-bg); border-color: var(--red); }
+.alert-banner.warn { background: var(--orange-bg); border-color: var(--orange); }
+.banner-btn {
+  padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: var(--accent); color: #fff; white-space: nowrap; transition: opacity .15s;
+}
+.alert-banner.crit .banner-btn { background: var(--red); }
+.banner-btn:hover { opacity: .85; }
+
+/* ── Alert list ── */
+.alert-list { display: flex; flex-direction: column; }
+.alert-row {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 20px;
+  border-bottom: .5px solid var(--border-soft); position: relative;
+  transition: background .15s var(--ease);
+}
+.alert-row:hover { background: var(--card-hover); }
+.alert-row.ack { opacity: .5; }
+.alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-content { flex: 1; min-width: 0; }
+.alert-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.alert-detail { font-size: 12px; color: var(--text-3); line-height: 1.6; word-break: break-word; }
+.alert-meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--text-4); }
+.ack-btn {
+  position: absolute; top: 14px; right: 16px;
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--card-alt); border: 1px solid var(--border-soft);
+  font-size: 14px; color: var(--green); display: flex; align-items: center;
+  justify-content: center; cursor: pointer; transition: all .15s var(--ease);
+}
+.ack-btn:hover { background: var(--green-bg); border-color: var(--green); }
+.btn-outline {
+  padding: 8px 18px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  background: transparent; border: 1.5px solid var(--accent); color: var(--accent);
+  cursor: pointer; transition: all .15s var(--ease);
+}
+.btn-outline:hover { background: var(--accent-bg); }
+
+/* ── Insights ── */
+.insight-row {
+  display: flex; align-items: flex-start; gap: 14px; padding: 14px 20px;
+  border-bottom: .5px solid var(--border-soft); cursor: pointer; transition: background .15s;
+}
+.insight-row:hover { background: var(--card-alt); }
+.insight-row:last-child { border-bottom: none; }
+.insight-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+}
+.insight-body { flex: 1; }
+.insight-title { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+.insight-detail { font-size: 12px; color: var(--text-3); line-height: 1.5; }
+
+/* ── Analytics ── */
+.analytics-agent-row {
+  display: grid; grid-template-columns: 140px 50px 1fr 120px; gap: 12px;
+  align-items: center; padding: 10px 16px;
+  border-bottom: .5px solid var(--border-soft); cursor: pointer; transition: background .15s;
+}
+.analytics-agent-row:hover { background: var(--card-alt); }
+.analytics-agent-row:last-child { border-bottom: none; }
+.aa-name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aa-total { font-size: 12px; color: var(--text-3); text-align: right; }
+.aa-bar { flex: 1; }
+.aa-pcts { display: flex; gap: 8px; font-size: 11px; font-weight: 500; }
+.stat-bar { display: flex; border-radius: 4px; overflow: hidden; height: 6px; }
+.stat-bar > div { min-width: 2px; }
+@media (max-width: 768px) {
+  .analytics-agent-row { grid-template-columns: 100px 40px 1fr 90px; gap: 8px; }
+  .aa-pcts { font-size: 10px; }
+}
+
+</style>
+</head>
+<body>
+<div class="aura"></div>
+<div id="root"></div>
+<div class="toast-wrap" id="toasts"></div>
+<script>
+const S = {
+  screen: 'boot', step: 0, view: 'overview',
+  authed: false, needsSetup: false,
+  agents: [], events: [], stats: {}, rules: {},
+  alerts: [], insights: [], agentStats: {},
+  enrollmentKey: '', loginError: '', setupError: '',
+  agentConfig: { green:'note', orange:'block', red:'block', audit:'all', custom_sensitive_paths:[] },
+  selAgent: null, selEvent: null, filter: 'all',
+  analyticsHours: 24,
+};
+
+const $ = id => document.getElementById(id);
+const el = (tag, cls, props) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (props) for (const [k,v] of Object.entries(props)) {
+    if (k === 'on') for (const [ev,fn] of Object.entries(v)) e.addEventListener(ev,fn);
+    else if (k === 'html') e.innerHTML = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+    else e.setAttribute(k, v);
+  }
+  return e;
+};
+const append = (parent, ...kids) => { for (const k of kids) if (k) parent.append(typeof k === 'string' ? document.createTextNode(k) : k); return parent; };
+const tc = t => t==='block'?'tier-block':t==='warn'?'tier-warn':'tier-allow';
+const sc = s => s==='online'?'var(--green)':'var(--text-5)';
+const fmt = ts => { if (!ts) return '\u2014'; try { return new Date(ts*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) } catch { return '\u2014' } };
+const ago = ts => { if (!ts) return '\u2014'; const s = Math.floor(Date.now()/1000-ts); if (s<10) return 'now'; if (s<60) return s+'s'; if (s<3600) return Math.floor(s/60)+'m'; if (s<86400) return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; };
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function toast(msg) { const t = el('div','toast',{text:msg}); $('toasts').append(t); setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),250)},2200); }
+function copyText(text) { navigator.clipboard.writeText(text).catch(()=>{}); toast('Copied'); }
+
+// Password eye toggle
+function pwField(placeholder, id) {
+  const wrap = el('div','pw-wrap',{style:{marginBottom:'8px'}});
+  const inp = el('input','rule-input',{type:'password',placeholder:placeholder,id:id||'',style:{width:'100%',padding:'10px 12px',paddingRight:'44px'}});
+  const eye = el('button','pw-eye',{text:'\u25CF',on:{click:()=>{
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    eye.textContent = show ? '\u25CB' : '\u25CF';
+  }}});
+  wrap.append(inp, eye);
+  return wrap;
+}
+
+// CSV export
+function exportCSV() {
+  const headers = ['Timestamp','Source','Agent','Tool','Verdict','Risk','Operation','Flow','Command','Proof'];
+  const rows = S.events.map(ev => [
+    ev.timestamp ? new Date(ev.timestamp * 1000).toISOString() : '',
+    ev.source || '', ev.agent || '', ev.tool || '',
+    ev.tier || '', ev.risk || '',
+    ev.operation || ev.op || '', ev.flow || '',
+    '"' + (ev.command_raw || ev.command || ev.cmd || '').replace(/"/g, '""') + '"',
+    '"' + (ev.proof || '').replace(/"/g, '""') + '"'
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `nexus-events-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exported');
+}
+
+// Command explanation
+function explainCommand(ev) {
+  const cmd = ev.command_raw || ev.command || ev.cmd || '';
+  const tier = ev.tier || '';
+  const risk = ev.risk || '';
+  const op = ev.operation || ev.op || '';
+  const flow = ev.flow || '';
+  const proof = ev.proof || '';
+
+  const parts = [];
+
+  if (tier === 'block') {
+    if (proof.includes('Unknown binary') || proof.includes('Unknown tool')) {
+      parts.push(`This command uses <strong>${esc(cmd.split(/\s+/)[0])}</strong>, which is not in the verified tool database. Nexus blocks unknown commands by default because it cannot verify what they do with your data.`);
+    } else if (proof.includes('SELF-PROTECTION')) {
+      parts.push('This command tried to modify Nexus Gate configuration files. This is permanently blocked to prevent an AI agent from disabling its own security checks.');
+    } else if (risk === 'critical') {
+      parts.push(`This command was classified as <strong>critical risk</strong> because it attempts to send local data to an external destination.`);
+      if (cmd.includes('|')) parts.push('A pipe connects a data reader to a network tool, creating a direct path for data to leave your machine.');
+      if (proof.includes('sensitive')) parts.push('The command accesses a sensitive file (.env, credentials, keys) which makes this especially dangerous.');
+    } else {
+      parts.push(`This command was blocked because it performs a <strong>${esc(op)}</strong> operation classified as <strong>${esc(risk)} risk</strong>.`);
+    }
+    if (flow) parts.push(`Data flow: <strong>${esc(flow)}</strong>`);
+  } else if (tier === 'warn') {
+    parts.push(`This command was flagged as <strong>${esc(risk)} risk</strong> — it performs a ${esc(op)} operation that could affect your data or system state.`);
+    if (flow) parts.push(`Data flow: <strong>${esc(flow)}</strong>`);
+  }
+
+  if (!parts.length) return '';
+  return parts.join(' ');
+}
+
+// ── API ──
+let sse = null;
+function connectSSE() { if (!S.authed) return; if (sse) sse.close(); sse = new EventSource('/api/stream'); sse.addEventListener('events',()=>fetchData()); sse.addEventListener('agents',()=>fetchData()); sse.addEventListener('rules',()=>fetchData()); sse.addEventListener('config',()=>loadConfig()); sse.addEventListener('alerts',()=>fetchData()); sse.onerror=()=>{if(sse)sse.close();sse=null;setTimeout(connectSSE,3000)}; }
+
+async function fetchData() {
+  try { const r = await fetch('/api/all',{credentials:'same-origin'}); if(r.status===401){S.authed=false;render();return;} const d=await r.json(); S.agents=d.agents||[];S.events=d.events||[];S.stats=d.stats||{};S.rules=d.rules||{};S.alerts=d.alerts||[]; if(!S.authed){S.authed=true;connectSSE();} } catch(e){}
+  try { const r2=await fetch('/api/insights',{credentials:'same-origin'}); if(r2.ok) S.insights=await r2.json(); } catch(e){}
+  try { const r3=await fetch(`/api/agent-stats?hours=${S.analyticsHours}`,{credentials:'same-origin'}); if(r3.ok) S.agentStats=await r3.json(); } catch(e){}
+  patch();
+}
+async function api(path,data) { try { const r=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); const d=await r.json(); if(!r.ok&&d.error) toast(d.error); return d; } catch(e) { toast('Network error'); return {error:'Network error'}; } }
+
+async function loadConfig() {
+  try { const r=await fetch('/api/agent-config',{credentials:'same-origin'}); if(r.ok){S.agentConfig=await r.json();} } catch(e){}
+  try { const r=await fetch('/api/settings',{credentials:'same-origin'}); if(r.ok){const d=await r.json();S.enrollmentKey=d.enrollment_key||'';} } catch(e){}
+}
+async function saveConfig() {
+  try{const r=await fetch('/api/agent-config',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.agentConfig)});if(r.ok){toast('Config saved');}else{const d=await r.json();toast(d.error||'Failed to save');}}catch(e){toast('Network error');}
+}
+
+async function doSetup(pw) { S.setupError=''; const d=await api('/api/setup',{password:pw}); if(d.ok){S.needsSetup=false;S.authed=true;S.enrollmentKey=d.enrollment_key||'';S.screen='setup';S.step=3;connectSSE();fetchData();await loadConfig();render();}else{S.setupError=d.error||'Failed';render();} }
+async function doLogin(pw) { S.loginError=''; const d=await api('/api/login',{password:pw}); if(d.ok){S.authed=true;S.screen='dashboard';connectSSE();await fetchData();await loadConfig();render();}else{S.loginError=d.error||'Failed';render();} }
+async function doLogout() { try{await api('/api/logout',{});}catch(e){} if(sse){sse.close();sse=null;} S.authed=false; render(); }
+async function addRule(key,val) { const r={...S.rules};const l=[...(r[key]||[])];if(l.some(i=>(typeof i==='string'?i:(i.value||''))===val))return;l.push(val);r[key]=l;S.rules=r;patch();try{const resp=await fetch('/api/rules',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});if(resp.ok){toast('Added');}else{const d=await resp.json();toast(d.error||'Failed');}}catch(e){toast('Network error');}fetchData(); }
+async function removeRule(key,idx) { const r={...S.rules};const l=[...(r[key]||[])];l.splice(idx,1);r[key]=l;S.rules=r;patch();try{const resp=await fetch('/api/rules',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(r)});if(resp.ok){toast('Removed');}else{const d=await resp.json();toast(d.error||'Failed');}}catch(e){toast('Network error');}fetchData(); }
+
+function go(view,extra) { S.view=view; if(!extra){S.selAgent=null;S.selEvent=null;} else Object.assign(S,extra); S.screen='dashboard'; render(); }
+
+// ── Render ──
+function render() {
+  const root = $('root');
+  root.innerHTML = '';
+  if (S.screen === 'setup' || S.needsSetup) { root.append(renderSetup()); return; }
+  if (!S.authed) { root.append(renderLogin()); return; }
+  root.innerHTML = '<div class="app"><aside class="side" id="sidebar"></aside><div class="main"><div class="content" id="page"></div></div></div>';
+  renderSidebar(); renderPage();
+}
+function patch() { if (S.screen !== 'dashboard') return; renderSidebar(); if (S.view==='overview') patchOverview(); else if (S.view==='events') patchEvents(); else if (S.view==='rules') patchRules(); else if (S.view==='alerts'||S.view==='analytics') renderPage(); }
+
+// ── Setup flow ──
+function renderSetup() {
+  const shell = el('div','setup-shell');
+  const frame = el('div','setup-frame');
+  const steps = [setupWelcome, setupHow, setupAccount, setupConfigure, setupConnect];
+  const step = Math.min(S.step, steps.length - 1);
+  frame.append(steps[step]());
+  const dots = el('div','dots');
+  for (let i = 0; i < steps.length; i++) dots.append(el('div','dot'+(i===step?' on':'')));
+  frame.append(dots);
+  shell.append(frame);
+  return shell;
+}
+
+function navButtons(backStep, forwardStep, forwardLabel, forwardFn) {
+  const row = el('div','btn-actions');
+  if (backStep !== null) row.append(el('button','btn-text',{text:'\u2190 Back',on:{click:()=>{S.step=backStep;render();}}}));
+  if (forwardFn) row.append(el('button','btn-fill',{text:forwardLabel||'Continue',on:{click:forwardFn}}));
+  else if (forwardStep !== null) row.append(el('button','btn-fill',{text:forwardLabel||'Continue',on:{click:()=>{S.step=forwardStep;render();}}}));
+  return row;
+}
+
+function setupWelcome() {
+  const c = el('div','setup-card');
+  c.innerHTML = '<div class="setup-title">nexus</div><div class="setup-sub">Command verification for AI agents.<br>Checks every command before it runs.</div>';
+  c.append(el('button','btn-fill',{text:'Get started',on:{click:()=>{S.step=1;render();}}}));
+  c.append(el('div','setup-mini',{text:'No account with external services. Everything runs on your machine.'}));
+  return c;
+}
+
+function setupHow() {
+  const c = el('div','setup-card',{style:{textAlign:'left'}});
+  c.innerHTML = '<div class="setup-title" style="text-align:center">How it works</div><div class="setup-sub" style="text-align:center">Three things happen every time your AI agent tries to run a command.</div>';
+  const f = el('div','features');
+  [['Intercept','The hook catches the command before the system executes it.'],
+   ['Analyze','It reads the structural data flow \u2014 pipes, flags, redirects, destinations.'],
+   ['Decide','Allow, warn, or block. Automatically. Under one millisecond.']
+  ].forEach(([title,desc],i) => {
+    const row = el('div','feature');
+    row.innerHTML = `<div class="feature-num">${i+1}</div><div class="feature-text"><strong>${title}</strong><span>${desc}</span></div>`;
+    f.append(row);
+  });
+  c.append(f);
+  c.append(navButtons(0, 2));
+  return c;
+}
+
+function setupAccount() {
+  const c = el('div','setup-card');
+  c.innerHTML = '<div class="setup-title">Create your account</div><div class="setup-sub">This password protects your dashboard. Choose something strong.</div>';
+  if (S.setupError) c.append(el('div','field-error',{text:S.setupError,style:{marginBottom:'14px',textAlign:'center'}}));
+  const f1 = el('div','field'); f1.innerHTML = '<label>Password</label>';
+  const pw1 = el('div','pw-wrap');
+  const i1 = el('input','',{type:'password',placeholder:'6 or more characters'}); 
+  const e1 = el('button','pw-eye',{text:'\u25CF',on:{click:()=>{const s=i1.type==='password';i1.type=s?'text':'password';e1.textContent=s?'\u25CB':'\u25CF';}}});
+  pw1.append(i1,e1); f1.append(pw1);
+  const f2 = el('div','field'); f2.innerHTML = '<label>Confirm password</label>';
+  const pw2 = el('div','pw-wrap');
+  const i2 = el('input','',{type:'password',placeholder:'Type it again'});
+  const e2 = el('button','pw-eye',{text:'\u25CF',on:{click:()=>{const s=i2.type==='password';i2.type=s?'text':'password';e2.textContent=s?'\u25CB':'\u25CF';}}});
+  pw2.append(i2,e2); f2.append(pw2);
+  c.append(f1, f2);
+  const submit = () => {
+    if (i1.value.length < 6) { S.setupError = 'At least 6 characters.'; render(); return; }
+    if (i1.value !== i2.value) { S.setupError = 'Passwords don\u2019t match.'; render(); return; }
+    doSetup(i1.value);
+  };
+  i1.addEventListener('keydown', e => { if (e.key === 'Enter') i2.focus(); });
+  i2.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  c.append(navButtons(1, null, 'Create account', submit));
+  setTimeout(() => i1.focus(), 80);
+  return c;
+}
+
+function setupConfigure() {
+  const c = el('div','setup-card',{style:{textAlign:'left'}});
+  c.innerHTML = '<div class="setup-title" style="text-align:center">Configuration</div><div class="setup-sub" style="text-align:center">Set your security posture. All of this can be changed later in Settings.</div>';
+
+  // Protection mode
+  const modeSection = el('div','',{style:{marginBottom:'24px'}});
+  modeSection.innerHTML = '<div style="font-size:14px;font-weight:600;margin-bottom:10px">Protection mode</div><div style="font-size:12px;color:var(--text-4);margin-bottom:12px">What happens when a command is flagged as risky.</div>';
+  const modes = [
+    ['strict',  'Strict',  'Warnings and dangerous commands are both blocked. Recommended.', 'block', 'block'],
+    ['moderate','Moderate', 'Dangerous commands blocked. Warnings allowed but logged.',       'pass_note', 'block'],
+    ['monitor', 'Monitor',  'Nothing blocked. Everything logged. Good for testing.',           'pass_silent', 'block_log'],
+  ];
+  const modeGrid = el('div','',{style:{display:'grid',gap:'8px'}});
+  const currentOrange = S.agentConfig.orange || 'block';
+  modes.forEach(([key, label, desc, orangeVal, redVal]) => {
+    const isActive = currentOrange === orangeVal;
+    const card = el('button','',{style:{
+      display:'block',width:'100%',textAlign:'left',padding:'14px 16px',borderRadius:'12px',
+      border: isActive ? '1.5px solid var(--accent)' : '1px solid var(--border-soft)',
+      background: isActive ? 'var(--accent-bg)' : 'var(--card-alt)',
+      transition:'all .15s var(--ease)', cursor:'pointer'
+    },on:{click:()=>{
+      S.agentConfig.orange = orangeVal;
+      S.agentConfig.red = redVal;
+      if (key === 'monitor') S.agentConfig.green = 'silent';
+      else S.agentConfig.green = 'note';
+      saveConfig();
+      render();
+    }}});
+    card.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><div style="width:16px;height:16px;border-radius:50%;border:${isActive?'5px solid var(--accent)':'2px solid var(--border)'};flex-shrink:0"></div><strong style="font-size:13px">${label}</strong></div><div style="font-size:12px;color:var(--text-3);margin-left:26px;line-height:1.5">${desc}</div>`;
+    modeGrid.append(card);
+  });
+  modeSection.append(modeGrid);
+  c.append(modeSection);
+
+  // Audit level
+  const auditSection = el('div','',{style:{marginBottom:'24px'}});
+  auditSection.innerHTML = '<div style="font-size:14px;font-weight:600;margin-bottom:10px">What to log</div>';
+  const audits = [['all','Everything','Every command, even safe ones.'],['warn_block','Warnings and blocks','Only flagged commands.'],['block','Blocks only','Only stopped commands.']];
+  const auditGrid = el('div','',{style:{display:'flex',gap:'6px',flexWrap:'wrap'}});
+  audits.forEach(([val,label,desc]) => {
+    const isOn = (S.agentConfig.audit||'all') === val;
+    const btn = el('button','',{style:{
+      padding:'8px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:'500',
+      border: isOn ? '1.5px solid var(--accent)' : '1px solid var(--border-soft)',
+      background: isOn ? 'var(--accent-bg)' : 'var(--card-alt)',
+      color: isOn ? 'var(--accent)' : 'var(--text-3)',
+      cursor:'pointer',transition:'all .15s var(--ease)'
+    },on:{click:()=>{S.agentConfig.audit=val;saveConfig();render();}},text:label});
+    btn.title = desc;
+    auditGrid.append(btn);
+  });
+  auditSection.append(auditGrid);
+  c.append(auditSection);
+
+  // Custom sensitive paths
+  c.append(pathEditor());
+
+  // Rules
+  c.append(ruleEditor('trusted_hosts','Trusted hosts','Hosts your agent can upload to.','api.example.com'));
+  c.append(ruleEditor('allowed_patterns','Allowed commands','Commands allowed even if not recognized.','terraform'));
+
+  c.append(navButtons(null, 4));
+  c.append(el('div','setup-mini',{text:'These settings sync to all connected agents automatically.',style:{textAlign:'center'}}));
+  return c;
+}
+
+function pathEditor() {
+  const sec = el('div','rule-section',{style:{marginBottom:'20px'}});
+  sec.innerHTML = '<h3>Sensitive paths</h3><p>Files and directories your agents should never expose. Checked on every command in addition to the built-in list (.env, .ssh, .aws, etc).</p>';
+  const chips = el('div','chip-list');
+  (S.agentConfig.custom_sensitive_paths||[]).forEach((p,i) => {
+    const ch = el('div','chip');
+    ch.append(document.createTextNode(p));
+    ch.append(el('span','chip-x',{text:'\u00D7',on:{click:()=>{
+      S.agentConfig.custom_sensitive_paths.splice(i,1);
+      saveConfig();
+      render();
+    }}}));
+    chips.append(ch);
+  });
+  sec.append(chips);
+  const row = el('div','rule-add');
+  const inp = el('input','rule-input',{type:'text',placeholder:'/opt/secrets, .internal-config'});
+  const doAdd = () => {
+    const v = inp.value.trim();
+    if (!v) return;
+    if (!S.agentConfig.custom_sensitive_paths) S.agentConfig.custom_sensitive_paths = [];
+    if (!S.agentConfig.custom_sensitive_paths.includes(v)) {
+      S.agentConfig.custom_sensitive_paths.push(v);
+      saveConfig();
+    }
+    inp.value = '';
+    render();
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+  row.append(inp, el('button','btn-fill',{text:'Add',style:{padding:'8px 18px',minWidth:'auto',fontSize:'13px'},on:{click:doAdd}}));
+  sec.append(row);
+  return sec;
+}
+
+function setupConnect() {
+  const c = el('div','setup-card');
+  const proto = location.protocol;
+  const host = location.hostname;
+  const port = location.port || '7070';
+  c.innerHTML = '<div class="setup-title">Connect your machines</div><div class="setup-sub">Use this enrollment key to connect agent machines to this dashboard.</div>';
+
+  const kb = el('div','key-box');
+  kb.innerHTML = '<div class="key-label">Enrollment key</div>';
+  const kr = el('div','key-row');
+  kr.append(el('div','key-value',{text: S.enrollmentKey || '...'}));
+  kr.append(el('button','copy-btn',{text:'Copy',on:{click:function(){ copyText(S.enrollmentKey); this.textContent='Copied'; this.classList.add('done'); setTimeout(()=>{this.textContent='Copy';this.classList.remove('done');},1500); }}}));
+  kb.append(kr);
+  c.append(kb);
+
+  const cmd = `python nexus_reporter.py --server ${proto}//${host}:${port} --enroll-key ${S.enrollmentKey || 'KEY'}`;
+  const cmdLabel = el('div','key-label',{text:'Run on each agent machine',style:{textAlign:'left',marginBottom:'8px'}});
+  c.append(cmdLabel);
+  c.append(el('div','cmd-block',{text: cmd}));
+  c.append(el('button','copy-btn',{text:'Copy command',style:{marginBottom:'24px'},on:{click:()=>copyText(cmd)}}));
+  c.append(navButtons(3, null, 'Open dashboard', () => {
+    S.screen = 'dashboard'; S.view = 'overview'; render(); setInterval(fetchData, 8000);
+  }));
+  c.append(el('div','setup-mini',{text:'You can always find this key in Settings.'}));
+  return c;
+}
+
+function ruleEditor(key,title,desc,placeholder) {
+  const sec = el('div','rule-section');
+  append(sec, el('h3','',{text:title}), el('p','',{text:desc}));
+  const chips = el('div','chip-list');
+  (S.rules[key]||[]).forEach((item,i)=>{
+    const val=typeof item==='string'?item:(item.value||item.host||item.pattern||'');
+    const ch=el('div','chip'); ch.append(document.createTextNode(val));
+    ch.append(el('span','chip-x',{text:'\u00D7',on:{click:()=>removeRule(key,i)}}));
+    chips.append(ch);
+  });
+  sec.append(chips);
+  const row = el('div','rule-add');
+  const inp = el('input','rule-input',{type:'text',placeholder:placeholder});
+  const add = () => { const v=inp.value.trim(); if(v){addRule(key,v);inp.value='';} };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')add();});
+  row.append(inp, el('button','btn-fill',{text:'Add',style:{padding:'8px 18px',minWidth:'auto',fontSize:'13px'},on:{click:add}}));
+  sec.append(row);
+  return sec;
+}
+
+// ── Login ──
+function renderLogin() {
+  const shell = el('div','setup-shell');
+  const c = el('div','setup-card',{style:{maxWidth:'400px',width:'100%'}});
+  c.innerHTML = `<div class="setup-title" style="font-size:24px">nexus</div><div class="setup-sub">Sign in to your dashboard.</div>`;
+  if (S.loginError) c.append(el('div','field-error',{text:S.loginError,style:{marginBottom:'14px',textAlign:'center'}}));
+  const f = el('div','field'); f.innerHTML = '<label>Password</label>';
+  const pwWrap = el('div','pw-wrap');
+  const inp = el('input','',{type:'password',placeholder:'Admin password'});
+  const eye = el('button','pw-eye',{text:'\u25CF',on:{click:()=>{const s=inp.type==='password';inp.type=s?'text':'password';eye.textContent=s?'\u25CB':'\u25CF';}}});
+  pwWrap.append(inp, eye); f.append(pwWrap);
+  c.append(f);
+  c.append(el('button','btn-fill full',{text:'Sign in',style:{marginTop:'8px'},on:{click:()=>{if(inp.value)doLogin(inp.value);}}}));
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&inp.value)doLogin(inp.value);});
+  setTimeout(()=>inp.focus(),80);
+  shell.append(c);
+  return shell;
+}
+
+// ── Dashboard sidebar ──
+function renderSidebar() {
+  const sb = $('sidebar'); if (!sb) return;
+  if (!sb._b) {
+    sb.innerHTML = '';
+    sb.append(el('div','side-title',{text:'nexus'}));
+    sb.append(el('div','side-label',{text:'Menu'}));
+    const nav = el('nav','nav');
+    [['overview','Overview'],['alerts','Alerts'],['analytics','Analytics'],['agents','Agents'],['events','Events'],['rules','Rules'],['settings','Settings']].forEach(([k,l])=>{
+      const b=el('button','',{on:{click:()=>go(k)}}); b.dataset.nav=k;
+      const cnt=el('span','nav-count'); cnt.dataset.nc=k;
+      append(b, document.createTextNode(l), cnt);
+      nav.append(b);
+    });
+    sb.append(nav);
+    const foot = el('div','side-stat');
+    foot.innerHTML = '<div class="live"><span class="pulse"></span><span id="sb-on"></span></div><div class="big" id="sb-tot">0</div><div class="dim">Connected agents</div>';
+    sb.append(foot);
+    sb.append(el('button','logout-btn',{text:'Sign out',on:{click:doLogout}}));
+    sb._b = true;
+  }
+  sb.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('on',b.dataset.nav===S.view));
+  const nc=k=>k==='agents'?(S.stats.agents_total||0):k==='events'?S.events.length:k==='rules'?((S.rules.trusted_hosts||[]).length+(S.rules.allowed_patterns||[]).length+(S.rules.blocked_patterns||[]).length):k==='alerts'?(S.stats.unacknowledged_alerts||S.alerts.length||0):'';
+  sb.querySelectorAll('[data-nc]').forEach(e=>{const v=String(nc(e.dataset.nc));e.textContent=v;e.style.display=v?'':'none';});
+  const onEl=$('sb-on');if(onEl)onEl.textContent=`${S.stats.agents_online||0} online`;
+  const totEl=$('sb-tot');if(totEl){const v=String(S.stats.agents_total||0);if(totEl.textContent!==v){totEl.textContent=v;totEl.dataset.pop='1';setTimeout(()=>delete totEl.dataset.pop,300);}}
+}
+
+// ── Dashboard pages ──
+function renderPage() {
+  const p=$('page'); if(!p) return; p.innerHTML='';
+  if(S.view==='overview')p.append(buildOverview());
+  else if(S.view==='alerts')p.append(buildAlerts());
+  else if(S.view==='analytics')p.append(buildAnalytics());
+  else if(S.view==='agents'&&S.selAgent)p.append(buildAgentDetail());
+  else if(S.view==='agents')p.append(buildAgents());
+  else if(S.view==='events')p.append(buildEvents());
+  else if(S.view==='rules')p.append(buildRules());
+  else if(S.view==='settings')p.append(buildSettings());
+}
+
+function pageHead(t,d){const h=el('div','page-head');h.innerHTML=`<h1>${t}</h1>`+(d?`<p>${d}</p>`:'');return h;}
+
+function buildOverview() {
+  const f=document.createDocumentFragment();
+  f.append(pageHead('Dashboard','Fleet activity and recent decisions.'));
+
+  // Alerts banner
+  const unack = S.alerts.filter(a=>!a.acknowledged);
+  if(unack.length > 0) {
+    const alertBanner = el('div','alert-banner');
+    const critCount = unack.filter(a=>a.severity==='critical').length;
+    const warnCount = unack.filter(a=>a.severity==='warning').length;
+    let bannerClass = warnCount > 0 ? 'alert-banner warn' : 'alert-banner info';
+    if(critCount > 0) bannerClass = 'alert-banner crit';
+    alertBanner.className = bannerClass;
+    const bannerLeft = el('div','',{style:{display:'flex',alignItems:'center',gap:'10px',flex:'1'}});
+    bannerLeft.innerHTML = `<span style="font-size:18px">${critCount?'\u26a0\ufe0f':'\u2139\ufe0f'}</span><div><strong>${unack.length} unacknowledged alert${unack.length!==1?'s':''}</strong>${critCount?`<span style="margin-left:8px;font-size:12px;opacity:.8">${critCount} critical</span>`:''}</div>`;
+    alertBanner.append(bannerLeft);
+    alertBanner.append(el('button','banner-btn',{text:'View alerts',on:{click:()=>go('alerts')}}));
+    f.append(alertBanner);
+  }
+
+  const stats=el('div','stats');stats.id='ov-stats';
+  [['total','Total','var(--text)','all'],['allowed','Allowed','var(--green)','allow'],['warned','Warned','var(--orange)','warn'],['blocked','Blocked','var(--red)','block']].forEach(([k,l,c,f])=>{
+    const s=el('div','stat');s.innerHTML=`<div class="stat-label">${l}</div><div class="stat-val" data-stat="${k}" style="color:${c}">0</div>`;
+    s.addEventListener('click',()=>{S.filter=f;go('events');});
+    stats.append(s);
+  });
+  f.append(stats);
+
+  // Insights panel
+  if(S.insights.length > 0) {
+    const insPanel = el('div','panel',{style:{marginBottom:'12px'}});
+    insPanel.innerHTML = '<div class="panel-head"><h2>Insights</h2></div>';
+    const insBody = el('div','',{style:{padding:'0'}});
+    S.insights.forEach(ins => {
+      const row = el('div','insight-row');
+      const sevColor = ins.severity==='critical'?'var(--red)':ins.severity==='warning'?'var(--orange)':ins.severity==='high'?'var(--orange)':'var(--accent)';
+      row.innerHTML = `<div class="insight-dot" style="background:${sevColor}"></div><div class="insight-body"><div class="insight-title">${esc(ins.title)}</div><div class="insight-detail">${esc(ins.detail)}</div></div>`;
+      // Navigate to relevant page on click
+      row.addEventListener('click',()=>{
+        const t=ins.type||'';const title=(ins.title||'').toLowerCase();
+        if(t==='hotspot'||title.includes('agent')){
+          // Find the agent mentioned
+          const agent=S.agents.find(a=>title.includes(a.name.toLowerCase()));
+          if(agent){go('agents',{selAgent:agent});}else{go('agents');}
+        } else if(title.includes('block')||title.includes('unknown')||title.includes('exfil')){
+          S.filter='block';go('events');
+        } else if(t==='trend'||title.includes('warn')){
+          S.filter='warn';go('events');
+        } else {go('events');}
+      });
+      insBody.append(row);
+    });
+    insPanel.append(insBody);
+    f.append(insPanel);
+  }
+
+  // Verdict breakdown bar
+  const breakPanel = el('div','panel',{style:{marginBottom:'12px'}});
+  breakPanel.id = 'ov-breakdown';
+  breakPanel.innerHTML = '<div class="panel-head"><h2>Verdict breakdown</h2></div><div style="padding:16px 20px" id="ov-bar-body"></div>';
+  f.append(breakPanel);
+
+  const g=el('div','grid-2');
+  const bp=el('div','panel');bp.innerHTML='<div class="panel-head" style="cursor:pointer" onclick="S.filter=\'block\';go(\'events\')"><h2>Recent blocks</h2></div><div id="ov-bl"></div>';
+  const tp=el('div','panel');tp.innerHTML='<div class="panel-head" style="cursor:pointer" onclick="S.filter=\'block\';go(\'events\')"><h2>Top blocked commands</h2></div><div id="ov-top"></div>';
+  g.append(bp,tp);f.append(g);
+
+  const g2=el('div','grid-2');
+  const ap=el('div','panel');ap.innerHTML='<div class="panel-head" style="cursor:pointer" onclick="go(\'agents\')"><h2>Active agents</h2></div><div id="ov-ag"></div>';
+  const rp=el('div','panel');rp.innerHTML='<div class="panel-head" style="cursor:pointer" onclick="go(\'events\')"><h2>Recent activity</h2></div><div id="ov-recent"></div>';
+  g2.append(ap,rp);f.append(g2);
+
+  setTimeout(patchOverview,0);return f;
+}
+function patchOverview() {
+  document.querySelectorAll('[data-stat]').forEach(e=>{const v=String(S.stats[e.dataset.stat]||0);if(e.textContent!==v){e.textContent=v;e.setAttribute('data-pop','1');setTimeout(()=>e.removeAttribute('data-pop'),300);}});
+
+  // Verdict bar
+  const barBody=$('ov-bar-body');
+  if(barBody){
+    const a=S.stats.allowed||0, w=S.stats.warned||0, b=S.stats.blocked||0;
+    const t=a+w+b||1;
+    barBody.innerHTML=`<div class="stat-bar"><div style="flex:${a};background:var(--green);cursor:pointer" onclick="S.filter='allow';go('events')"></div><div style="flex:${w};background:var(--orange);cursor:pointer" onclick="S.filter='warn';go('events')"></div><div style="flex:${b};background:var(--red);cursor:pointer" onclick="S.filter='block';go('events')"></div></div><div class="stat-breakdown"><div style="cursor:pointer" onclick="S.filter='allow';go('events')"><span style="background:var(--green)"></span>Allowed ${a} (${Math.round(a/t*100)}%)</div><div style="cursor:pointer" onclick="S.filter='warn';go('events')"><span style="background:var(--orange)"></span>Warned ${w} (${Math.round(w/t*100)}%)</div><div style="cursor:pointer" onclick="S.filter='block';go('events')"><span style="background:var(--red)"></span>Blocked ${b} (${Math.round(b/t*100)}%)</div></div>`;
+  }
+
+  // Recent blocks
+  const bl=$('ov-bl');
+  if(bl){const evts=S.events.filter(e=>e.tier==='block').slice(0,6);bl.innerHTML='';bl.append(evts.length?makeTable(evts,true):el('div','panel-empty',{text:'No blocks yet'}));}
+
+  // Top blocked commands
+  const top=$('ov-top');
+  if(top){
+    const counts={};
+    S.events.filter(e=>e.tier==='block').forEach(e=>{const cmd=(e.command_raw||e.command||e.cmd||'').split(/\s+/)[0]||'?';counts[cmd]=(counts[cmd]||0)+1;});
+    const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    if(!sorted.length){top.innerHTML='<div class="panel-empty">No blocks yet</div>';}
+    else{const list=el('div','top-list');sorted.forEach(([cmd,n],i)=>{const item=el('div','top-item');item.innerHTML=`<div class="top-rank">${i+1}</div><div class="top-cmd">${esc(cmd)}</div><div class="top-count">${n}</div>`;item.addEventListener('click',()=>{S.filter='block';go('events');});list.append(item);});top.innerHTML='';top.append(list);}
+  }
+
+  // Agents
+  const ag=$('ov-ag');if(ag){ag.innerHTML='';ag.append(S.agents.length?makeAgentTable():el('div','panel-empty',{text:'No agents connected'}));}
+
+  // Recent activity (all tiers)
+  const recent=$('ov-recent');
+  if(recent){const evts=S.events.slice(0,8);recent.innerHTML='';recent.append(evts.length?makeTable(evts,true):el('div','panel-empty',{text:'No events yet'}));}
+}
+
+function buildEvents() {
+  const f=document.createDocumentFragment();
+  const head=pageHead('Events','Command decisions across all agents.');
+  // Add export button to header
+  const exportRow=el('div','',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'16px'}});
+  const fl=el('div','filters',{style:{marginBottom:'0'}});
+  ['all','allow','warn','block'].forEach(k=>{fl.append(el('button','filter-btn'+(S.filter===k?' on':''),{text:k==='all'?'All':k[0].toUpperCase()+k.slice(1),on:{click:()=>{S.filter=k;S.selEvent=null;renderPage();}}}));});
+  exportRow.append(fl);
+  exportRow.append(el('button','export-btn',{text:'Export CSV',on:{click:exportCSV}}));
+  f.append(head);f.append(exportRow);
+  const g=el('div',S.selEvent?'detail-grid':'detail-grid solo');g.id='ev-grid';
+  const p=el('div','panel');p.innerHTML='<div id="ev-body"></div>';g.append(p);
+  if(S.selEvent)g.append(makeDetail(S.selEvent));
+  f.append(g);setTimeout(patchEvents,0);return f;
+}
+function patchEvents(){const b=$('ev-body');if(!b)return;let evts=S.events;if(S.filter!=='all')evts=evts.filter(e=>e.tier===S.filter);b.innerHTML='';b.append(evts.length?makeTable(evts.slice(0,100),true):el('div','panel-empty',{text:'No events match your filter'}));}
+
+function buildAgents(){
+  const f=document.createDocumentFragment();f.append(pageHead('Agents','Connected machines.'));
+  // Enrollment section
+  const ep=el('div','settings-card');
+  ep.innerHTML='<h3>Add a machine</h3><div class="desc">Run this on the remote machine to connect it.</div>';
+  const cmd=`python nexus_reporter.py --server ${location.protocol}//${location.hostname}:${location.port||'7070'} --enroll-key ${S.enrollmentKey||'KEY'}`;
+  const cr=el('div','',{style:{display:'flex',gap:'8px',alignItems:'center'}});
+  cr.append(el('div','mono truncate',{text:cmd,style:{flex:'1',padding:'10px 12px',borderRadius:'10px',background:'var(--card-alt)',border:'.5px solid var(--border-soft)',fontSize:'11px',color:'var(--text-3)',overflow:'auto',whiteSpace:'nowrap'}}));
+  cr.append(el('button','copy-btn',{text:'Copy',on:{click:()=>copyText(cmd)}}));
+  ep.append(cr);f.append(ep);
+  const p=el('div','panel');p.innerHTML='<div class="panel-head"><h2>Fleet</h2></div>';
+  if(!S.agents.length){p.innerHTML+='<div class="panel-empty">No agents connected yet</div>';}
+  else{const g=el('div','agent-grid');S.agents.forEach(a=>{const evts=S.events.filter(e=>e.agent===a.name);const bl=evts.filter(e=>e.tier==='block').length;const c=el('button','agent-card',{on:{click:()=>go('agents',{selAgent:a})}});c.innerHTML=`<div class="agent-top"><div style="width:8px;height:8px;border-radius:50%;background:${sc(a.status)}"></div><span class="agent-name">${a.name||'\u2014'}</span><span class="tier ${a.status==='online'?'tier-allow':'tier-warn'}">${a.status||'offline'}</span></div><div class="agent-chips"><span class="chip">${a.team||'\u2014'}</span><span class="chip">${a.os||'\u2014'}</span><span class="chip">${a.ip||'\u2014'}</span></div><div class="agent-nums"><div class="agent-num"><div class="n">${evts.length}</div><div class="l">Commands</div></div><div class="agent-num"><div class="n" style="color:${bl?'var(--red)':'inherit'}">${bl}</div><div class="l">Blocked</div></div></div>`;g.append(c);});p.append(g);}
+  f.append(p);return f;
+}
+function buildAgentDetail(){const a=S.selAgent;const evts=S.events.filter(e=>e.agent===a.name);const f=document.createDocumentFragment();f.append(el('button','back-link',{text:'\u2190 All agents',on:{click:()=>go('agents')}}));f.append(pageHead(a.name,[a.team,a.os,a.ip,'Last seen '+ago(a.last_heartbeat)].filter(Boolean).join(' \u00B7 ')));const p=el('div','panel');p.innerHTML='<div class="panel-head"><h2>Activity</h2></div>';p.append(evts.length?makeTable(evts.slice(0,50),true):el('div','panel-empty',{text:'No events from this agent'}));f.append(p);return f;}
+
+function buildRules(){
+  const f=document.createDocumentFragment();f.append(pageHead('Rules','Changes sync to all agents within 30 seconds.'));
+  const p=el('div','panel');const g=el('div','rules-cols');g.id='rules-body';p.append(g);f.append(p);setTimeout(patchRules,0);return f;
+}
+function patchRules(){const g=$('rules-body');if(!g)return;g.innerHTML='';
+  [['trusted_hosts','Trusted hosts','Hosts your agent can upload to.','api.example.com'],['allowed_patterns','Allowed commands','Allowed even if unrecognized.','terraform'],['blocked_patterns','Blocked commands','Always blocked.','evil-tool']].forEach(([k,t,d,ph])=>g.append(ruleEditor(k,t,d,ph)));
+}
+
+function buildSettings(){
+  const f=document.createDocumentFragment();
+  f.append(pageHead('Settings','Server configuration, security policy, and account.'));
+
+  // Protection mode
+  const modeCard = el('div','settings-card');
+  modeCard.innerHTML = '<h3>Protection mode</h3><div class="desc">Controls what happens when a command is flagged as risky. Changes sync to all agents within 30 seconds.</div>';
+  const modes = [
+    ['strict',  'Strict',  'Warnings and dangerous commands are both blocked.', 'block'],
+    ['moderate','Moderate', 'Dangerous commands blocked. Warnings pass through but are logged.', 'pass_note'],
+    ['monitor', 'Monitor',  'Nothing blocked. Everything logged. For testing.', 'pass_silent'],
+  ];
+  const modeGrid = el('div','',{style:{display:'grid',gap:'8px',marginBottom:'8px'}});
+  const curOrange = S.agentConfig.orange || 'block';
+  modes.forEach(([key, label, desc, orangeVal]) => {
+    const isActive = curOrange === orangeVal;
+    const card = el('button','',{style:{
+      display:'block',width:'100%',textAlign:'left',padding:'14px 16px',borderRadius:'12px',
+      border: isActive ? '1.5px solid var(--accent)' : '1px solid var(--border-soft)',
+      background: isActive ? 'var(--accent-bg)' : 'var(--card-alt)',
+      cursor:'pointer',transition:'all .15s var(--ease)'
+    },on:{click:()=>{
+      S.agentConfig.orange = orangeVal;
+      S.agentConfig.red = key === 'monitor' ? 'block_log' : 'block';
+      S.agentConfig.green = key === 'monitor' ? 'silent' : 'note';
+      saveConfig(); render();
+    }}});
+    card.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:2px"><div style="width:14px;height:14px;border-radius:50%;border:${isActive?'4px solid var(--accent)':'2px solid var(--border)'};flex-shrink:0"></div><strong style="font-size:13px">${label}</strong></div><div style="font-size:12px;color:var(--text-3);margin-left:24px;line-height:1.5">${desc}</div>`;
+    modeGrid.append(card);
+  });
+  modeCard.append(modeGrid);
+  f.append(modeCard);
+
+  // Audit level
+  const auditCard = el('div','settings-card');
+  auditCard.innerHTML = '<h3>Audit level</h3><div class="desc">What gets written to the audit log and sent to this dashboard.</div>';
+  const auditRow = el('div','',{style:{display:'flex',gap:'6px',flexWrap:'wrap'}});
+  [['all','Everything'],['warn_block','Warnings + blocks'],['block','Blocks only']].forEach(([val,label])=>{
+    const isOn = (S.agentConfig.audit||'all') === val;
+    auditRow.append(el('button','',{style:{
+      padding:'8px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:'500',
+      border: isOn ? '1.5px solid var(--accent)' : '1px solid var(--border-soft)',
+      background: isOn ? 'var(--accent-bg)' : 'var(--card-alt)',
+      color: isOn ? 'var(--accent)' : 'var(--text-3)',
+      cursor:'pointer',transition:'all .15s var(--ease)'
+    },on:{click:()=>{S.agentConfig.audit=val;saveConfig();render();}},text:label}));
+  });
+  auditCard.append(auditRow);
+  f.append(auditCard);
+
+  // Custom sensitive paths
+  const pathCard = el('div','settings-card');
+  pathCard.append(pathEditor());
+  f.append(pathCard);
+
+  // Enrollment key
+  const ek=el('div','settings-card');
+  ek.innerHTML='<h3>Enrollment key</h3><div class="desc">Agents use this to register. Rotating it invalidates the old key. Already-connected agents are not affected.</div>';
+  const kr=el('div','',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'12px'}});
+  kr.append(el('div','',{text:S.enrollmentKey||'...',style:{flex:'1',padding:'10px 12px',borderRadius:'10px',background:'var(--card-alt)',border:'.5px solid var(--border-soft)',fontFamily:'var(--mono)',fontSize:'13px',fontWeight:'600',wordBreak:'break-all'}}));
+  kr.append(el('button','copy-btn',{text:'Copy',on:{click:()=>copyText(S.enrollmentKey)}}));
+  ek.append(kr);
+  ek.append(el('button','btn-outline',{text:'Rotate key',style:{fontSize:'13px',color:'var(--red)',borderColor:'var(--red)'},on:{click:async()=>{if(!confirm('Rotate? Old key stops working immediately.'))return;const d=await api('/api/settings/rotate-key',{});if(d.ok){S.enrollmentKey=d.enrollment_key;toast('Key rotated');render();}}}}));
+  f.append(ek);
+
+  // Connect command
+  const cc=el('div','settings-card');
+  const cmd=`python nexus_reporter.py --server ${location.protocol}//${location.hostname}:${location.port||'7070'} --enroll-key ${S.enrollmentKey||'KEY'}`;
+  cc.innerHTML='<h3>Connect a machine</h3><div class="desc">Run on each agent machine. Requires Python 3.8+ and nexus_reporter.py.</div>';
+  const cr=el('div','',{style:{display:'flex',gap:'8px',alignItems:'center'}});
+  cr.append(el('div','',{text:cmd,style:{flex:'1',padding:'10px 12px',borderRadius:'10px',background:'var(--card-alt)',border:'.5px solid var(--border-soft)',fontFamily:'var(--mono)',fontSize:'11px',color:'var(--text-3)',overflow:'auto',whiteSpace:'nowrap'}}));
+  cr.append(el('button','copy-btn',{text:'Copy',on:{click:()=>copyText(cmd)}}));
+  cc.append(cr);f.append(cc);
+
+  // Change password
+  const pw=el('div','settings-card');pw.innerHTML='<h3>Change password</h3><div class="desc">Update your admin password.</div>';
+  const f1=pwField('Current password','pw-cur');
+  const f2=pwField('New password (6+ characters)','pw-new');
+  const f3=pwField('Confirm new password','pw-conf');
+  pw.append(f1,f2,f3);
+  pw.append(el('button','btn-fill',{text:'Update password',style:{padding:'10px 24px',fontSize:'13px',minWidth:'auto'},on:{click:async()=>{
+    const cur=f1.querySelector('input').value;
+    const n=f2.querySelector('input').value;
+    const c=f3.querySelector('input').value;
+    if(n.length<6){toast('At least 6 characters');return;}
+    if(n!==c){toast('Passwords don\u2019t match');return;}
+    const d=await api('/api/settings/password',{current_password:cur,new_password:n});
+    if(d.ok){toast('Password changed');f1.querySelector('input').value='';f2.querySelector('input').value='';f3.querySelector('input').value='';}
+    else toast(d.error||'Failed');
+  }}}));
+  f.append(pw);return f;
+}
+
+// ── Shared builders ──
+function makeTable(events,clickable) {
+  const t=document.createElement('table');t.innerHTML='<thead><tr><th>Verdict</th><th>Source</th><th>Agent</th><th>Command</th><th>Time</th><th></th></tr></thead>';
+  const tb=document.createElement('tbody');
+  events.forEach(ev=>{
+    const tr=document.createElement('tr');
+    if(clickable)tr.addEventListener('click',()=>{S.selEvent=ev;renderPage();});
+    const cmd=ev.command_raw||ev.command||ev.cmd||'';
+    const tool=cmd.split(/\s+/)[0]||'';
+    const hostM=cmd.match(/https?:\/\/([^\/\s:]+)/);
+    const host=hostM?hostM[1]:'';
+    const isBlocked=ev.tier==='block'||ev.tier==='warn';
+    let actionHtml='';
+    if(isBlocked&&tool){
+      actionHtml=`<button class="allow-btn" data-tool="${esc(tool)}" data-host="${esc(host)}" onclick="event.stopPropagation()">Allow</button>`;
+    }
+    const src=ev.source||'';
+    const srcLabel=src==='claude'?'Claude':src==='gemini'?'Gemini':src==='codex'?'Codex':ev.tool||'';
+    const srcColor=src==='claude'?'#E87B35':src==='gemini'?'#4285F4':src==='codex'?'#10a37f':'#999';
+    const srcBadge=srcLabel?`<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:${srcColor};background:${srcColor}14;border:1px solid ${srcColor}30">${srcLabel}</span>`:'';
+    tr.innerHTML=`<td><span class="tier ${tc(ev.tier)}">${ev.tier||'?'}</span></td><td>${srcBadge}</td><td style="font-weight:600">${ev.agent||'\u2014'}</td><td class="mono truncate">${esc(cmd||'\u2014')}</td><td class="dim" style="white-space:nowrap;font-size:12px">${fmt(ev.timestamp||ev.received_at)}</td><td style="text-align:right">${actionHtml}</td>`;
+    // Wire up allow button
+    const allowBtn=tr.querySelector('.allow-btn');
+    if(allowBtn){
+      allowBtn.addEventListener('click',async(e)=>{
+        e.stopPropagation();
+        const t=allowBtn.dataset.tool;
+        const h=allowBtn.dataset.host;
+        if(h){await addRule('trusted_hosts',h);}
+        else if(t){await addRule('allowed_patterns',t);}
+        allowBtn.textContent='Done';
+        allowBtn.disabled=true;
+      });
+    }
+    tb.append(tr);
+  });
+  t.append(tb);return t;
+}
+function makeAgentTable(){const t=document.createElement('table');t.innerHTML='<thead><tr><th></th><th>Name</th><th>Team</th><th>OS</th><th>Seen</th></tr></thead>';const tb=document.createElement('tbody');S.agents.forEach(a=>{const tr=document.createElement('tr');tr.addEventListener('click',()=>go('agents',{selAgent:a}));tr.innerHTML=`<td><div style="width:8px;height:8px;border-radius:50%;background:${sc(a.status)}"></div></td><td style="font-weight:600">${a.name||'\u2014'}</td><td>${a.team||'\u2014'}</td><td>${a.os||'\u2014'}</td><td class="dim" style="font-size:12px">${ago(a.last_heartbeat)}</td>`;tb.append(tr);});t.append(tb);return t;}
+function makeDetail(ev){
+  const d=el('div','detail');
+  const cmd = ev.command_raw||ev.command||ev.cmd||'';
+  const isBlocked = ev.tier === 'block' || ev.tier === 'warn';
+
+  // Extract actionable parts from command
+  const tool = cmd.split(/\s+/)[0] || '';
+  const hostMatch = cmd.match(/https?:\/\/([^\/\s:]+)/);
+  const host = hostMatch ? hostMatch[1] : '';
+
+  const src=ev.source||'';
+  const srcLabel=src==='claude'?'Claude Code':src==='gemini'?'Gemini CLI':src==='codex'?'Codex CLI':ev.tool||'Unknown';
+
+  let bodyHtml = `
+    <div class="detail-head"><span class="tier ${tc(ev.tier)}">${ev.tier}</span><button class="close-x" onclick="S.selEvent=null;renderPage()">\u2715</button></div>
+    <div class="detail-body">
+      <div class="detail-row"><span class="k">Source</span><span class="v">${srcLabel}</span></div>
+      <div class="detail-row"><span class="k">Agent</span><span class="v">${ev.agent||'\u2014'}</span></div>
+      <div class="detail-row"><span class="k">Tool</span><span class="v">${ev.tool||'\u2014'}</span></div>
+      <div class="detail-row"><span class="k">Time</span><span class="v">${ev.timestamp?new Date(ev.timestamp*1000).toLocaleString():(ev.time||'\u2014')}</span></div>
+      <div class="detail-row"><span class="k">Operation</span><span class="v">${ev.operation||ev.op||'\u2014'}</span></div>
+      <div class="detail-row"><span class="k">Risk</span><span class="v">${ev.risk||'\u2014'}</span></div>
+      <div class="detail-row"><span class="k">Flow</span><span class="v">${ev.flow||'\u2014'}</span></div>
+      <div class="detail-label">Command</div>
+      <div class="code-box">${esc(cmd||'\u2014')}</div>
+      ${ev.proof?`<div class="detail-label">Structural proof</div><div class="code-box">${esc(ev.proof)}</div>`:''}
+    </div>`;
+  d.innerHTML = bodyHtml;
+
+  // Command explanation
+  const explanation = explainCommand(ev);
+  if (explanation) {
+    const explainDiv = el('div', ev.tier==='warn' ? 'explain-box warn-box' : 'explain-box', {html: explanation});
+    const detailBody = d.querySelector('.detail-body');
+    if (detailBody) detailBody.append(explainDiv);
+  }
+
+  if (isBlocked && cmd) {
+    const actions = el('div','',{style:{padding:'0 16px 16px'}});
+    actions.innerHTML = '<div class="detail-label">Admin actions</div>';
+    const btnRow = el('div','',{style:{display:'flex',flexDirection:'column',gap:'6px'}});
+
+    if (tool) {
+      btnRow.append(el('button','',{
+        style:{width:'100%',padding:'10px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:'500',textAlign:'left',border:'1px solid var(--border-soft)',background:'var(--card-alt)',cursor:'pointer',transition:'all .15s var(--ease)'},
+        html:`<span style="font-weight:600">Allow tool:</span> <code style="font-family:var(--mono)">${esc(tool)}</code><div style="font-size:11px;color:var(--text-4);margin-top:2px">Adds to allowed commands. Takes effect on next heartbeat.</div>`,
+        on:{click:async()=>{await addRule('allowed_patterns',tool);}}
+      }));
+    }
+    if (host) {
+      btnRow.append(el('button','',{
+        style:{width:'100%',padding:'10px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:'500',textAlign:'left',border:'1px solid var(--border-soft)',background:'var(--card-alt)',cursor:'pointer',transition:'all .15s var(--ease)'},
+        html:`<span style="font-weight:600">Trust host:</span> <code style="font-family:var(--mono)">${esc(host)}</code><div style="font-size:11px;color:var(--text-4);margin-top:2px">Allows uploads to this host. Takes effect on next heartbeat.</div>`,
+        on:{click:async()=>{await addRule('trusted_hosts',host);}}
+      }));
+    }
+    btnRow.append(el('button','',{
+      style:{width:'100%',padding:'10px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:'500',textAlign:'left',border:'1px solid var(--border-soft)',background:'var(--card-alt)',cursor:'pointer',transition:'all .15s var(--ease)'},
+      html:`<span style="font-weight:600">Block permanently</span><div style="font-size:11px;color:var(--text-4);margin-top:2px">Adds ${esc(tool||'this command')} to the block list.</div>`,
+      on:{click:async()=>{if(tool)await addRule('blocked_patterns',tool);}}
+    }));
+    actions.append(btnRow);
+    d.append(actions);
+  }
+  return d;
+}
+
+// ── Alerts page ──
+function buildAlerts() {
+  const f=document.createDocumentFragment();
+  const head=pageHead('Alerts','Security alerts generated from blocked commands and anomalies.');
+  f.append(head);
+
+  // Ack all button
+  const unack = S.alerts.filter(a=>!a.acknowledged);
+  if(unack.length > 0) {
+    const ackRow = el('div','',{style:{display:'flex',justifyContent:'flex-end',marginBottom:'12px'}});
+    ackRow.append(el('button','btn-outline',{text:`Acknowledge all (${unack.length})`,on:{click:async()=>{
+      await api('/api/alerts/ack',{all:true});
+      S.alerts.forEach(a=>a.acknowledged=1);
+      S.stats.unacknowledged_alerts=0;
+      renderPage(); renderSidebar(); toast('All alerts acknowledged');
+    }}}));
+    f.append(ackRow);
+  }
+
+  const p=el('div','panel');
+  if(!S.alerts.length) {
+    p.innerHTML='<div class="panel-empty">No alerts. All clear.</div>';
+  } else {
+    const list = el('div','alert-list');
+    S.alerts.forEach(a => {
+      const row = el('div','alert-row'+(a.acknowledged?' ack':''));
+      const sevColor = a.severity==='critical'?'var(--red)':a.severity==='warning'?'var(--orange)':'var(--accent)';
+      const sevIcon = a.severity==='critical'?'\u26d4':a.severity==='warning'?'\u26a0\ufe0f':'\u2139\ufe0f';
+      const ts = a.created_at ? new Date(a.created_at*1000).toLocaleString() : '';
+      row.innerHTML = `<div class="alert-icon" style="color:${sevColor}">${sevIcon}</div><div class="alert-content"><div class="alert-title">${esc(a.title)}</div><div class="alert-detail">${esc(a.detail||'').replace(/\\n/g,'<br>')}</div><div class="alert-meta"><span class="tier ${a.severity==='critical'?'tier-block':a.severity==='warning'?'tier-warn':'tier-allow'}">${a.severity}</span><span>${a.agent||''}</span><span class="dim">${ts}</span></div></div>`;
+      if(!a.acknowledged) {
+        const ackBtn = el('button','ack-btn',{text:'\u2713',title:'Acknowledge',on:{click:async(e)=>{
+          e.stopPropagation();
+          await api('/api/alerts/ack',{id:a.id});
+          a.acknowledged=1;
+          if(S.stats.unacknowledged_alerts>0) S.stats.unacknowledged_alerts--;
+          renderPage(); renderSidebar();
+        }}});
+        row.append(ackBtn);
+      }
+      list.append(row);
+    });
+    p.append(list);
+  }
+  f.append(p);
+  return f;
+}
+
+// ── Analytics page ──
+function buildAnalytics() {
+  const f=document.createDocumentFragment();
+  f.append(pageHead('Analytics','Per-agent statistics, top commands, and risk breakdown.'));
+
+  // Time range selector
+  const rangeRow = el('div','',{style:{display:'flex',gap:'6px',marginBottom:'16px'}});
+  [1,6,24,72,168].forEach(h=>{
+    const label = h===1?'1h':h===6?'6h':h===24?'24h':h===72?'3d':'7d';
+    const isOn = S.analyticsHours===h;
+    rangeRow.append(el('button','filter-btn'+(isOn?' on':''),{text:label,on:{click:async()=>{
+      S.analyticsHours=h;
+      try{const r=await fetch(`/api/agent-stats?hours=${h}`,{credentials:'same-origin'});if(r.ok) S.agentStats=await r.json();}catch(e){}
+      renderPage();
+    }}}));
+  });
+  f.append(rangeRow);
+
+  const as = S.agentStats||{};
+
+  // Per-agent tier breakdown
+  const tierPanel = el('div','panel',{style:{marginBottom:'12px'}});
+  tierPanel.innerHTML = '<div class="panel-head"><h2>Activity by agent</h2></div>';
+  const tierData = as.tier_by_agent||[];
+  if(tierData.length) {
+    const agentMap = {};
+    tierData.forEach(r=>{
+      if(!agentMap[r.agent]) agentMap[r.agent]={allow:0,warn:0,block:0,total:0};
+      agentMap[r.agent][r.tier]=(agentMap[r.agent][r.tier]||0)+r.count;
+      agentMap[r.agent].total+=r.count;
+    });
+    const sorted = Object.entries(agentMap).sort((a,b)=>b[1].total-a[1].total);
+    const agBody = el('div','',{style:{padding:'0 20px 16px'}});
+    sorted.forEach(([name,d])=>{
+      const row = el('div','analytics-agent-row');
+      const pctA = Math.round((d.allow||0)/d.total*100);
+      const pctW = Math.round((d.warn||0)/d.total*100);
+      const pctB = Math.round((d.block||0)/d.total*100);
+      row.innerHTML = `<div class="aa-name">${esc(name)}</div><div class="aa-total">${d.total}</div><div class="aa-bar"><div class="stat-bar" style="height:8px"><div style="flex:${d.allow||0};background:var(--green)"></div><div style="flex:${d.warn||0};background:var(--orange)"></div><div style="flex:${d.block||0};background:var(--red)"></div></div></div><div class="aa-pcts"><span style="color:var(--green)">${pctA}%</span><span style="color:var(--orange)">${pctW}%</span><span style="color:var(--red)">${pctB}%</span></div>`;
+      const agent=S.agents.find(a=>a.name===name);
+      if(agent)row.addEventListener('click',()=>go('agents',{selAgent:agent}));
+      agBody.append(row);
+    });
+    tierPanel.append(agBody);
+  } else {
+    tierPanel.innerHTML += '<div class="panel-empty">No activity in this period</div>';
+  }
+  f.append(tierPanel);
+
+  const g = el('div','grid-2');
+
+  // Top operations
+  const opsPanel = el('div','panel');
+  opsPanel.innerHTML = '<div class="panel-head"><h2>Top operations</h2></div>';
+  const topOps = as.top_operations||[];
+  if(topOps.length) {
+    const opMap = {};
+    topOps.forEach(r=>{
+      const k=r.operation||'unknown';
+      opMap[k]=(opMap[k]||0)+r.count;
+    });
+    const opSorted = Object.entries(opMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const opList = el('div','top-list');
+    opSorted.forEach(([op,n],i)=>{
+      const item = el('div','top-item');
+      item.innerHTML = `<div class="top-rank">${i+1}</div><div class="top-cmd">${esc(op)}</div><div class="top-count">${n}</div>`;
+      opList.append(item);
+    });
+    opsPanel.append(opList);
+  } else {
+    opsPanel.innerHTML += '<div class="panel-empty">No data</div>';
+  }
+  g.append(opsPanel);
+
+  // Top commands
+  const cmdPanel = el('div','panel');
+  cmdPanel.innerHTML = '<div class="panel-head"><h2>Top commands</h2></div>';
+  const topCmds = as.top_commands||[];
+  if(topCmds.length) {
+    const cmdMap = {};
+    topCmds.forEach(r=>{
+      const k = (r.command||'').split(/\s+/)[0]||'?';
+      cmdMap[k]=(cmdMap[k]||0)+r.count;
+    });
+    const cmdSorted = Object.entries(cmdMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const cmdList = el('div','top-list');
+    cmdSorted.forEach(([cmd,n],i)=>{
+      const item = el('div','top-item');
+      item.innerHTML = `<div class="top-rank">${i+1}</div><div class="top-cmd">${esc(cmd)}</div><div class="top-count">${n}</div>`;
+      cmdList.append(item);
+    });
+    cmdPanel.append(cmdList);
+  } else {
+    cmdPanel.innerHTML += '<div class="panel-empty">No data</div>';
+  }
+  g.append(cmdPanel);
+  f.append(g);
+
+  // Risk breakdown
+  const riskPanel = el('div','panel');
+  riskPanel.innerHTML = '<div class="panel-head"><h2>Risk distribution by agent</h2></div>';
+  const riskData = as.risk_by_agent||[];
+  if(riskData.length) {
+    const tbl = document.createElement('table');
+    tbl.innerHTML = '<thead><tr><th>Agent</th><th>Risk</th><th>Count</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    riskData.slice(0,30).forEach(r=>{
+      const tr = document.createElement('tr');
+      const riskColor = r.risk==='critical'?'var(--red)':r.risk==='high'?'var(--orange)':r.risk==='medium'?'var(--text-3)':'var(--green)';
+      tr.innerHTML = `<td style="font-weight:600">${esc(r.agent)}</td><td><span style="color:${riskColor};font-weight:500">${r.risk}</span></td><td>${r.count}</td>`;
+      tbody.append(tr);
+    });
+    tbl.append(tbody);
+    riskPanel.append(tbl);
+  } else {
+    riskPanel.innerHTML += '<div class="panel-empty">No data</div>';
+  }
+  f.append(riskPanel);
+
+  return f;
+}
+
+// ── Boot ──
+(async function(){
+  try { const r=await fetch('/api/status',{credentials:'same-origin'}); const d=await r.json();
+    if(d.needs_setup){S.needsSetup=true;S.screen='setup';S.step=0;render();return;}
+    if(d.authenticated){S.authed=true;S.screen='dashboard';connectSSE();await fetchData();await loadConfig();}
+  } catch(e){}
+  render(); if(S.authed)setInterval(fetchData,8000);
+})();
+</script>
+</body>
+</html>

@@ -5,6 +5,14 @@ Nexus Gate — Dynamic Flow Learner
 Observes what a command actually does via strace, derives the flow tuple
 from observed syscalls. No guessing. No hand-curation. Watched behavior.
 
+
+# Fix encoding for Windows terminals
+try:
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+except (AttributeError, OSError):
+    pass
+
   python nexus_learn.py "curl https://example.com"
   python nexus_learn.py "grep -r TODO ."
   python nexus_learn.py --batch commands.txt
@@ -406,13 +414,13 @@ def print_result(learned: dict, comparison: dict = None):
     if comparison:
         status = comparison["status"]
         if status == "MATCH":
-            print(f"\n  {GREEN}✅ Matches hardcoded table{RESET}")
+            print(f"\n  {GREEN}* Matches hardcoded table{RESET}")
         elif status == "NEW":
-            print(f"\n  {YELLOW}NEW — not in table{RESET}")
+            print(f"\n  {YELLOW}NEW -- not in table{RESET}")
             print(f"  {DIM}Add to KNOWN_INFRASTRUCTURE:{RESET}")
             print(f"  {comparison['suggested_entry']}")
         elif status == "MISMATCH":
-            print(f"\n  {RED}❌ Differs from table:{RESET}")
+            print(f"\n  {RED}X Differs from table:{RESET}")
             for m in comparison["mismatches"]:
                 print(f"    {m}")
             print(f"  {DIM}Suggested fix:{RESET}")

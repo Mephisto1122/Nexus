@@ -34,6 +34,13 @@ import sys, json, re, os, time, shlex, hashlib
 from pathlib import Path
 from dataclasses import dataclass
 
+# Fix encoding for Windows terminals (cp1252 can't handle Unicode symbols)
+try:
+    sys.stdout.reconfigure(errors='replace')
+    sys.stderr.reconfigure(errors='replace')
+except (AttributeError, OSError):
+    pass
+
 
 sys.path.insert(0, str(Path(__file__).parent))
 from nexus_structural import (
@@ -161,7 +168,7 @@ def _atomic_write(path: Path, data: str):
 
 def _file_lock(path: Path):
     """Return a locked file descriptor. Caller must close it."""
-    ensure_dirs()  # Fix 1: create ~/.nexus before any lock
+    ensure_dirs()
     lock_path = path.with_suffix('.lock')
     fd = open(lock_path, 'w')
     try:
@@ -171,7 +178,7 @@ def _file_lock(path: Path):
         pass  # Windows or no fcntl — best-effort
     return fd
 
-# Fix 2: Single lock held across the entire read-modify-write transaction.
+# Single lock held across the entire read-modify-write transaction.
 # Callers use: with memory_transaction() as mem: ... modify mem ...
 # The lock is held from load through save. No concurrent process can
 # read stale state and overwrite.
@@ -200,9 +207,9 @@ class _MemoryTransaction:
                     self._mem = mem
                     return self._mem
         except (json.JSONDecodeError, ValueError, KeyError) as e:
-            sys.stderr.write(f"  NEXUS: Corrupt memory.json — resetting. ({e})\n")
+            sys.stderr.write(f"  NEXUS: Corrupt memory.json -- resetting. ({e})\n")
         except (OSError, IOError) as e:
-            sys.stderr.write(f"  NEXUS: Error loading memory — using defaults. ({e})\n")
+            sys.stderr.write(f"  NEXUS: Error loading memory -- using defaults. ({e})\n")
         self._mem = json.loads(json.dumps(MEMORY_SCHEMA))
         return self._mem
     
@@ -235,9 +242,9 @@ def _load_memory_raw() -> dict:
                     mem["stats"].setdefault(sk, 0)
                 return mem
     except (json.JSONDecodeError, ValueError, KeyError) as e:
-        sys.stderr.write(f"  NEXUS: Corrupt memory.json — resetting. ({e})\n")
+        sys.stderr.write(f"  NEXUS: Corrupt memory.json -- resetting. ({e})\n")
     except (OSError, IOError) as e:
-        sys.stderr.write(f"  NEXUS: Error loading memory — using defaults. ({e})\n")
+        sys.stderr.write(f"  NEXUS: Error loading memory -- using defaults. ({e})\n")
     return json.loads(json.dumps(MEMORY_SCHEMA))
 
 def _save_memory_raw(mem: dict):
@@ -284,9 +291,9 @@ def load_memory() -> dict:
                     mem["stats"].setdefault(sk, 0)
                 return mem
     except (json.JSONDecodeError, ValueError, KeyError) as e:
-        sys.stderr.write(f"  NEXUS: Corrupt memory.json — resetting. ({e})\n")
+        sys.stderr.write(f"  NEXUS: Corrupt memory.json -- resetting. ({e})\n")
     except (OSError, IOError) as e:
-        sys.stderr.write(f"  NEXUS: Error loading memory — using defaults. ({e})\n")
+        sys.stderr.write(f"  NEXUS: Error loading memory -- using defaults. ({e})\n")
     finally:
         fd.close()
     return json.loads(json.dumps(MEMORY_SCHEMA))
@@ -389,12 +396,17 @@ def log_action(entry: dict):
     ensure_dirs()
     entry["timestamp"] = time.time()
     if "command" in entry:
+        # Keep full command for dashboard display
+        entry["command_raw"] = str(entry["command"])
+        # Sanitize for on-disk audit log (hashes argument values)
         entry["command"] = _sanitize_for_log(str(entry["command"]))
     line = json.dumps(entry) + "\n"
     fd = _file_lock(LOG_FILE)
     try:
         with open(LOG_FILE, "a") as f:
             f.write(line)
+            f.flush()
+            os.fsync(f.fileno())
         try:
             os.chmod(str(LOG_FILE), 0o600)
         except OSError:
@@ -554,8 +566,6 @@ def _extract_hosts_from_transport(transport_cmd: str) -> list:
                 o_hosts, i = _parse_ssh_o_option(tok, parts, i)
                 hosts.extend(o_hosts)
                 continue
-                i += 2
-                continue
             if tok.startswith("-") and len(tok) == 2 and i + 1 < len(parts):
                 i += 2
                 continue
@@ -698,8 +708,6 @@ def _extract_ssh_host(tokens: list, binary: str) -> str:
             i += 1
         
         return ",".join(remote_hosts) if remote_hosts else ""
-    
-    return ""
     
     return ""
 
@@ -904,7 +912,7 @@ def _classify_bash(command: str, memory: dict) -> Verdict:
             v.flow, v.reads, v.writes, v.net_in, v.net_out, v.executes,
             "critical",
             f"Tainted path: data originated from {taint_hit.get('source', '?')} "
-            f"— multi-step exfiltration",
+            f"-- multi-step exfiltration",
             v.is_opaque,
             v.observations + [f"taint:{taint_hit.get('source', '?')}"],
         )
@@ -975,7 +983,7 @@ def _classify_bash(command: str, memory: dict) -> Verdict:
         proof = f"{v.proof} [{override_reason}]"
     elif user_allow_match and not is_override_safe:
         risk = v.risk
-        override_reason = f"user-approved: {user_allow_match} [OVERRIDE BLOCKED — structural risk too high]"
+        override_reason = f"user-approved: {user_allow_match} [OVERRIDE BLOCKED -- structural risk too high]"
         proof = f"{v.proof} [{override_reason}]"
     elif user_custom_match and is_override_safe:
         pat, info = user_custom_match
@@ -987,7 +995,7 @@ def _classify_bash(command: str, memory: dict) -> Verdict:
     elif user_custom_match and not is_override_safe:
         risk = v.risk
         pat, info = user_custom_match
-        override_reason = f"learned: {info.get('proof', 'custom')} [OVERRIDE BLOCKED — structural risk too high]"
+        override_reason = f"learned: {info.get('proof', 'custom')} [OVERRIDE BLOCKED -- structural risk too high]"
         proof = f"{v.proof} [{override_reason}]"
     else:
         risk = v.risk
@@ -1042,12 +1050,17 @@ def _classify_write_tool(tool_name: str, tool_input: dict) -> Verdict:
 
     # Map tool to flow
     TOOL_FLOWS = {
-        "Write": ("create", "medium", "∅ → A"),
-        "Edit": ("transform", "medium", "A → A'"),
-        "MultiEdit": ("transform", "medium", "A → A'"),
-        "CreateFile": ("create", "medium", "∅ → A"),
-        "Delete": ("delete", "high", "A → ∅"),
-        "Rename": ("move", "high", "(A,∅) → (∅,A)"),
+        "Write": ("create", "medium", "-> A"),
+        "Edit": ("transform", "medium", "A -> A'"),
+        "MultiEdit": ("transform", "medium", "A -> A'"),
+        "CreateFile": ("create", "medium", "-> A"),
+        "Delete": ("delete", "high", "A -> x"),
+        "Rename": ("move", "high", "(A,x) -> (x,A)"),
+        # Gemini CLI tool names
+        "write_file": ("create", "medium", "-> A"),
+        "replace": ("transform", "medium", "A -> A'"),
+        "delete_file": ("delete", "high", "A -> x"),
+        "rename_file": ("move", "high", "(A,x) -> (x,A)"),
     }
 
     info = TOOL_FLOWS.get(tool_name)
@@ -1075,6 +1088,19 @@ def _classify_write_tool(tool_name: str, tool_input: dict) -> Verdict:
     tier = "allow" if risk in ("low", "medium") else "warn"
     return Verdict(op, risk, flow, f"Built-in tool: {tool_name}", False, False, False, tier)
 
+
+
+def _hook_block(reason: str):
+    """Block a command across all supported agents.
+    
+    Claude Code reads JSON from stdout. Codex and Gemini read stderr with exit code 2.
+    This writes to both for universal compatibility.
+    """
+    # Strip ANSI for stderr (may go to logs)
+    clean = re.sub(r'\033\[[0-9;]*m', '', reason)
+    sys.stderr.write(clean + "\n")
+    print(json.dumps({"decision": "block", "reason": reason}))
+    sys.exit(2)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1154,37 +1180,60 @@ def _verify_integrity() -> bool:
 def run_hook():
     _load_config()
     if not _verify_integrity():
-        print(json.dumps({"decision": "block", "reason":
-            "NEXUS GATE: Integrity check failed. Tables may have been modified.\n"
-            "Run: python nexus_trace_compress.py\nto revalidate and update the fingerprint."}))
-        sys.exit(2)
+        _hook_block("NEXUS GATE: Integrity check failed. Tables may have been modified.\n"
+                     "Run: python nexus_trace_compress.py\nto revalidate and update the fingerprint.")
     raw = sys.stdin.read()
     try:
         hook_input = json.loads(raw)
     except (json.JSONDecodeError, Exception) as e:
-        print(json.dumps({"decision": "block", "reason":
-            f"NEXUS GATE: Could not parse hook input.\n{e}"}))
-        sys.exit(2)
+        _hook_block(f"NEXUS GATE: Could not parse hook input.\n{e}")
 
-    tool_name = hook_input.get("tool_name", "")
-    tool_input = hook_input.get("tool_input", {})
-    
-    # Load memory for classification (reads allowed_patterns, trusted_hosts, tainted_paths).
-    # No lock needed here — classification is read-only.
-    # Lock is acquired only for the brief stats update at exit.
+    # Normalize input across agents:
+    # Claude Code: {"tool_name": "Bash", "tool_input": {"command": "ls"}}
+    # Codex CLI:   {"tool_name": "Bash", "tool_input": {"command": "ls"}}
+    # Gemini CLI:  {"tool_name": "run_shell_command", "tool_input": {"command": "ls"}}
+    #              or {"tool_name": "Shell", "input": {"command": "ls"}}
+    #              or {"tool_name": "...", "args": {"command": "ls"}}
+    tool_name = hook_input.get("tool_name", hook_input.get("name", ""))
+    tool_input = hook_input.get("tool_input", hook_input.get("input", hook_input.get("args", {})))
+    if not isinstance(tool_input, dict):
+        tool_input = {}
+
+    # Gemini may send "Shell" instead of "run_shell_command"
+    # and "command" may be nested under different keys
+    if not tool_name:
+        # If no tool_name, check if there's a command directly
+        if "command" in hook_input:
+            tool_name = "Bash"
+            tool_input = {"command": hook_input["command"]}
+
+    # Load memory for classification
     memory = load_memory()
 
-    # Route by tool type — explicit allowlist, default-deny
-    WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "CreateFile", "Delete", "Rename"}
-    # Tools that are read-only or UI-only — safe to pass through
+    # Route by tool type -- explicit allowlist, default-deny
+    # Supports Claude Code (Bash, Write, Edit, Read, etc.),
+    # Codex CLI (Bash), and Gemini CLI (run_shell_command, Shell, write_file, etc.)
+    BASH_TOOLS = {"Bash", "run_shell_command", "Shell", "shell", "execute_command"}
+    WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "CreateFile", "Delete", "Rename",
+                   "write_file", "replace", "delete_file", "rename_file",
+                   "WriteFile", "EditFile", "DeleteFile", "RenameFile"}
     PASSTHROUGH_TOOLS = {
         "Read", "View", "Glob", "Grep", "Search", "LS",
         "TodoRead", "WebSearch", "WebFetch",
-        "Think",  # Claude internal reasoning
+        "Think",
+        "read_file", "list_directory", "search_files", "grep_search",
+        "web_search", "web_fetch",
+        "ReadFile", "ListDirectory", "SearchFiles",
     }
 
-    if tool_name == "Bash" and "command" in tool_input:
-        v = _classify_bash(tool_input["command"], memory)
+    if tool_name in BASH_TOOLS:
+        cmd = tool_input.get("command", tool_input.get("cmd", ""))
+        if cmd:
+            v = _classify_bash(cmd, memory)
+        else:
+            # No command field -- pass through (might be a no-op check)
+            print(json.dumps({}))
+            sys.exit(0)
     elif tool_name in WRITE_TOOLS:
         v = _classify_write_tool(tool_name, tool_input)
     elif tool_name in PASSTHROUGH_TOOLS:
@@ -1193,10 +1242,28 @@ def run_hook():
     else:
         # Unknown tool type — block. This is a security boundary.
         v = Verdict("unknown", "critical", "?",
-                     f"Unknown tool type: {tool_name} — not in nexus allowlist",
+                     f"Unknown tool type: {tool_name} -- not in nexus allowlist",
                      False, False, True, "block")
 
-    command_str = str(tool_input.get("command", tool_input.get("file_path", "")))[:200]
+    command_str = str(tool_input.get("command", tool_input.get("cmd",
+                      tool_input.get("file_path", tool_input.get("path", ""))))).strip()[:500]
+
+    # Detect which AI platform triggered this event
+    CLAUDE_TOOLS = {"Bash", "Write", "Edit", "MultiEdit", "CreateFile", "Delete", "Rename",
+                    "Read", "View", "Glob", "Grep", "Search", "LS", "TodoRead",
+                    "WebSearch", "WebFetch", "Think"}
+    GEMINI_TOOLS = {"run_shell_command", "Shell", "shell", "execute_command",
+                    "write_file", "replace", "delete_file", "rename_file",
+                    "read_file", "list_directory", "search_files", "grep_search",
+                    "web_search", "web_fetch",
+                    "WriteFile", "EditFile", "DeleteFile", "RenameFile",
+                    "ReadFile", "ListDirectory", "SearchFiles"}
+    if tool_name in CLAUDE_TOOLS:
+        source = "claude"
+    elif tool_name in GEMINI_TOOLS:
+        source = "gemini"
+    else:
+        source = "unknown"
 
     # Audit log
     should_log = (
@@ -1207,6 +1274,7 @@ def run_hook():
     if should_log:
         entry = {
             "tool": tool_name, "command": command_str,
+            "source": source,
             "operation": v.operation, "risk": v.risk,
             "flow": v.flow, "proof": v.proof, "tier": v.tier,
             "boundary": v.crosses_boundary, "execution": v.is_execution,
@@ -1230,7 +1298,7 @@ def run_hook():
         if _CONFIG["green"] == "silent":
             print(json.dumps({}))
         else:
-            msg = (f"[Nexus Gate verified: {v.operation} — {v.flow}] "
+            msg = (f"[Nexus Gate verified: {v.operation} - {v.flow}] "
                    f"Tell the user this action was verified by Nexus Gate.")
             print(json.dumps({"additionalContext": msg}))
         sys.exit(0)
@@ -1241,7 +1309,7 @@ def run_hook():
         orange = _CONFIG["orange"]
 
         if orange == "block":
-            lines = [f"{YELLOW}{BOLD}NEXUS GATE: Blocked — {v.operation} [{v.risk}]{RESET}",
+            lines = [f"{YELLOW}{BOLD}NEXUS GATE: Blocked - {v.operation} [{v.risk}]{RESET}",
                      f"  {v.flow}"]
             if v.crosses_boundary:
                 lines.append(f"  {YELLOW}Data leaves your machine.{RESET}")
@@ -1249,17 +1317,18 @@ def run_hook():
                 safe = re.escape(command_str.split()[0]) if command_str.split() else ""
                 if safe:
                     lines.append(f"  {DIM}To allow:{RESET} nexus allow \"{safe}\"")
-            print(json.dumps({"decision": "block", "reason": "\n".join(lines)}))
-            sys.exit(2)
+            _hook_block("\n".join(lines))
         elif orange == "pass_silent":
             print(json.dumps({}))
             sys.exit(0)
         else:  # pass_note
-            msg = (f"[Nexus Gate warning: {v.operation} [{v.risk}] — {v.flow}]"
-                   f" Mention to the user that Nexus Gate flagged this as a "
-                   f"high-risk {v.operation} operation.")
+            warn_msg = f"[NEXUS GATE WARNING] {v.operation} [{v.risk}] - {v.flow}"
             if v.crosses_boundary:
-                msg += " Data leaves the machine."
+                warn_msg += " -- Data leaves the machine."
+            sys.stderr.write(f"  {YELLOW}{warn_msg}{RESET}\n")
+            msg = (f"IMPORTANT: Nexus Gate flagged this command as high-risk. "
+                   f"You MUST tell the user: \"{warn_msg}\". "
+                   f"This is a security warning, do not skip it.")
             print(json.dumps({"additionalContext": msg}))
             sys.exit(0)
 
@@ -1273,14 +1342,14 @@ def run_hook():
             safe_pattern = ""
             if command_str:
                 safe_pattern = re.escape(command_str.split()[0]) if command_str.split() else ""
-            lines = [f"{RED}{BOLD}NEXUS GATE: Blocked — unknown command.{RESET}",
+            lines = [f"{RED}{BOLD}NEXUS GATE: Blocked - unknown command.{RESET}",
                      f"  {DIM}{command_str}{RESET}" if command_str else "",
                      f"  Cannot verify data flow. Not in known infrastructure."]
             if safe_pattern:
                 lines.append(f"  {DIM}To allow:{RESET} nexus allow \"{safe_pattern}\"")
         else:
             is_critical_exfil = v.risk == "critical" and v.crosses_boundary
-            lines = [f"{RED}{BOLD}NEXUS GATE: Blocked — {v.operation} [{v.risk}]{RESET}",
+            lines = [f"{RED}{BOLD}NEXUS GATE: Blocked - {v.operation} [{v.risk}]{RESET}",
                      f"  {v.flow}",
                      f"  {DIM}{v.proof}{RESET}"]
             if v.crosses_boundary:
@@ -1305,8 +1374,7 @@ def run_hook():
                     lines.append(f"  {DIM}To allow:{RESET} nexus allow \"{safe}\"")
         if _CONFIG["red"] == "block_log":
             lines.append(f"  {DIM}Full analysis in ~/.nexus/audit.jsonl{RESET}")
-        print(json.dumps({"decision": "block", "reason": "\n".join(lines)}))
-        sys.exit(2)
+        _hook_block("\n".join(lines))
 
 
 # ═══════════════════════════════════════════════════════════
@@ -1326,7 +1394,7 @@ def cmd_test(command: str):
         print(f"  Override:  {v.override}")
     print(f"  Proof:     {v.proof}")
     if v.is_opaque:
-        print(f"  Opaque:    yes — cannot verify data flow")
+        print(f"  Opaque:    yes -- cannot verify data flow")
     if v.crosses_boundary:
         print(f"  Warning:   sends data outside your machine")
     if v.is_execution:
@@ -1355,7 +1423,7 @@ def cmd_allow(pattern: str):
     memory = load_memory()
     memory["allowed_patterns"].append(pattern)
     save_memory(memory)
-    print(f"\n  \033[92m✓ Allowed:\033[0m '{pattern}' will now pass as read/low.")
+    print(f"\n  \033[92m* Allowed:\033[0m '{pattern}' will now pass as read/low.")
     print(f"  Next time this command runs, it will be auto-approved.\n")
 
 
@@ -1363,7 +1431,7 @@ def cmd_deny(pattern: str):
     memory = load_memory()
     memory["blocked_patterns"].append(pattern)
     save_memory(memory)
-    print(f"\n  \033[91m✓ Blocked:\033[0m '{pattern}' will always be blocked.\n")
+    print(f"\n  \033[91m* Blocked:\033[0m '{pattern}' will always be blocked.\n")
 
 
 def cmd_trust_host(host: str):
@@ -1380,7 +1448,7 @@ def cmd_trust_host(host: str):
         return
     
     print(f"\n  \033[93mWarning:\033[0m This allows your AI agent to upload data to \033[1m{host}\033[0m.")
-    print(f"  Exact match only — subdomains like api.{host} are NOT included.")
+    print(f"  Exact match only -- subdomains like api.{host} are NOT included.")
     print(f"  Trust each hostname you need separately.\n")
     try:
         confirm = input(f"  Are you sure? (yes/no): ").strip().lower()
@@ -1394,7 +1462,7 @@ def cmd_trust_host(host: str):
     if host not in memory.get("trusted_hosts", []):
         memory.setdefault("trusted_hosts", []).append(host)
         save_memory(memory)
-    print(f"\n  \033[92m✓ Trusted:\033[0m Uploads to '{host}' are now allowed.")
+    print(f"\n  \033[92m* Trusted:\033[0m Uploads to '{host}' are now allowed.")
     print(f"  Exfiltration to other hosts is still blocked.\n")
 
 
@@ -1404,11 +1472,11 @@ def cmd_untrust_host(host: str):
     hosts = memory.get("trusted_hosts", [])
     memory["trusted_hosts"] = [h for h in hosts if h.lower() != host]
     save_memory(memory)
-    print(f"\n  \033[91m✓ Removed:\033[0m '{host}' is no longer trusted.\n")
+    print(f"\n  \033[91m* Removed:\033[0m '{host}' is no longer trusted.\n")
 
 
 def cmd_train():
-    print("\n  Nexus Gate — Training Mode")
+    print("\n  Nexus Gate -- Training Mode")
     print("  Type a command, see structural classification, correct if wrong.")
     print("  Type 'quit' to save and exit.\n")
     memory = load_memory()
@@ -1431,7 +1499,7 @@ def cmd_train():
             break
         if ok in ("y", "yes", "skip", "s", ""):
             if ok in ("y", "yes"):
-                print("  ✓ Confirmed.\n")
+                print("  * Confirmed.\n")
             continue
         print("\n  Options: block, allow")
         print("  (or an operation: read, create, update, delete, send, copy, etc.)\n")
@@ -1447,14 +1515,14 @@ def cmd_train():
             if not pattern:
                 pattern = re.escape(cmd.split()[0]) if cmd.split() else re.escape(cmd)
             if _is_self_modification(pattern):
-                print("  ✗ Cannot allow patterns that match nexus files.\n")
+                print("  * Cannot allow patterns that match nexus files.\n")
                 continue
             if new_op == "block":
                 memory["blocked_patterns"].append(pattern)
-                print(f"  ✓ '{pattern}' will always be BLOCKED.\n")
+                print(f"  * '{pattern}' will always be BLOCKED.\n")
             else:
                 memory["allowed_patterns"].append(pattern)
-                print(f"  ✓ '{pattern}' will always be ALLOWED.\n")
+                print(f"  * '{pattern}' will always be ALLOWED.\n")
         else:
             valid = ["read", "create", "update", "delete", "send", "copy",
                      "move", "transform", "execute", "filter"]
@@ -1478,7 +1546,7 @@ def cmd_train():
                 "proof": f"Taught by user: {new_op} ({new_risk})"
             }
             tier = "allow" if new_risk in ("low", "medium") else "warn"
-            print(f"  ✓ '{pattern}' → {new_op} [{new_risk}] → {tier}\n")
+            print(f"  * '{pattern}' -> {new_op} [{new_risk}] -> {tier}\n")
     save_memory(memory)
     print(f"\n  Saved to {MEMORY_FILE}\n")
 
@@ -1556,8 +1624,10 @@ if __name__ == "__main__":
             run_hook()
         except Exception as e:
             try:
-                print(json.dumps({"decision": "block", "reason":
-                    f"NEXUS GATE: Internal error. Blocking by default.\n{e}"}))
+                msg = f"NEXUS GATE: Internal error. Blocking by default.\n{e}"
+                sys.stderr.write(msg + "\n")
+                print(json.dumps({"decision": "block", "reason": msg}))
             except (TypeError, OSError):
+                sys.stderr.write("NEXUS GATE: Critical error. Blocked.\n")
                 print('{"decision":"block","reason":"NEXUS GATE: Critical error. Blocked."}')
             sys.exit(2)

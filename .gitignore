@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Nexus runtime data (never commit)
+memory.json
+memory.lock
+audit.jsonl
+audit.lock
+audit.zip
+config.json
+reporter_token.json
+reporter_state.json
+integrity.json
+
+# Server data
+*.db
+server.secret
+cert.pem
+key.pem
+credentials.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+venv/
+.venv/
+
+# Docker
+nexus-data/
+
+# Installer-generated runtime artifacts (never commit)
+admin/
+nexus.bat
+nexus_hook.cmd
+codex-wrap.*
