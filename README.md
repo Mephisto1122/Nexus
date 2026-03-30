@@ -38,6 +38,10 @@ This will:
 
 Everything runs locally. Zero dependencies. Works on macOS, Linux, and Windows.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/78457f4a-ddd7-4822-9e9f-0257a110585a" alt="nexus screen 1" width="45%" />
+  <img src="https://github.com/user-attachments/assets/96811a40-3979-4efa-969a-8ba14142cf37" alt="nexus screen 2" width="45%" style="margin-left: 10px;" />
+</p>
 ### What gets configured
 
 | Agent | Config file | Hook event |
